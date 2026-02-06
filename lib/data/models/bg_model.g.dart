@@ -32,13 +32,14 @@ class BgModelAdapter extends TypeAdapter<BgModel> {
       fdrDetails: fields[12] as FdrModel?,
       createdAt: fields[13] as DateTime,
       updatedAt: fields[14] as DateTime,
+      firmName: fields[15] as String? ?? 'DoonInfra',
     );
   }
 
   @override
   void write(BinaryWriter writer, BgModel obj) {
     writer
-      ..writeByte(15)
+      ..writeByte(16)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -68,7 +69,9 @@ class BgModelAdapter extends TypeAdapter<BgModel> {
       ..writeByte(13)
       ..write(obj.createdAt)
       ..writeByte(14)
-      ..write(obj.updatedAt);
+      ..write(obj.updatedAt)
+      ..writeByte(15)
+      ..write(obj.firmName);
   }
 
   @override

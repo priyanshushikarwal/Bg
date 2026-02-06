@@ -88,6 +88,21 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Firm Selector Section
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12, bottom: 8, top: 4),
+                    child: Text(
+                      'SELECT FIRM',
+                      style: TextStyle(
+                        color: AppColors.textOnDarkMuted.withValues(alpha: 0.4),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
+                  _FirmSelector(),
+                  const SizedBox(height: 16),
                   // Section Label
                   Padding(
                     padding: const EdgeInsets.only(left: 12, bottom: 8, top: 4),
@@ -314,6 +329,163 @@ class _SidebarItemState extends State<_SidebarItem> {
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Firm Selector Widget
+class _FirmSelector extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final filterState = ref.watch(bgFilterProvider);
+    final firms = ref.watch(firmNamesProvider);
+    final selectedFirm = filterState.firmFilter;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: AppColors.sidebarSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: selectedFirm != null
+              ? AppColors.primary.withValues(alpha: 0.5)
+              : Colors.transparent,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // "All Firms" option
+          _FirmOption(
+            name: 'All Firms',
+            isSelected: selectedFirm == null,
+            onTap: () {
+              ref.read(bgFilterProvider.notifier).setFirmFilter(null);
+            },
+          ),
+          // Individual firms
+          ...firms.map(
+            (firm) => _FirmOption(
+              name: firm,
+              isSelected: selectedFirm == firm,
+              onTap: () {
+                ref.read(bgFilterProvider.notifier).setFirmFilter(firm);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FirmOption extends StatefulWidget {
+  final String name;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _FirmOption({
+    required this.name,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  State<_FirmOption> createState() => _FirmOptionState();
+}
+
+class _FirmOptionState extends State<_FirmOption> {
+  bool _isHovered = false;
+
+  IconData _getFirmIcon(String name) {
+    switch (name) {
+      case 'DoonInfra':
+        return Icons.corporate_fare_rounded;
+      case 'BI High Power Tech':
+        return Icons.bolt_rounded;
+      case 'BI':
+        return Icons.business_rounded;
+      default:
+        return Icons.all_inclusive_rounded;
+    }
+  }
+
+  Color _getFirmColor(String name) {
+    switch (name) {
+      case 'DoonInfra':
+        return const Color(0xFF6366F1);
+      case 'BI High Power Tech':
+        return const Color(0xFFF59E0B);
+      case 'BI':
+        return const Color(0xFF10B981);
+      default:
+        return AppColors.primary;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final firmColor = _getFirmColor(widget.name);
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: widget.isSelected
+                ? firmColor.withValues(alpha: 0.15)
+                : (_isHovered
+                      ? AppColors.sidebarSurface.withValues(alpha: 0.5)
+                      : Colors.transparent),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: widget.isSelected
+                      ? firmColor.withValues(alpha: 0.2)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Icon(
+                  _getFirmIcon(widget.name),
+                  size: 16,
+                  color: widget.isSelected
+                      ? firmColor
+                      : AppColors.textOnDarkMuted.withValues(alpha: 0.6),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  widget.name,
+                  style: TextStyle(
+                    color: widget.isSelected
+                        ? AppColors.textOnDark
+                        : AppColors.textOnDarkMuted.withValues(
+                            alpha: _isHovered ? 0.9 : 0.7,
+                          ),
+                    fontSize: 12,
+                    fontWeight: widget.isSelected
+                        ? FontWeight.w600
+                        : FontWeight.w400,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (widget.isSelected)
+                Icon(Icons.check_circle_rounded, size: 16, color: firmColor),
+            ],
           ),
         ),
       ),

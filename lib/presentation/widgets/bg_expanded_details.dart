@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/release_letter_service.dart';
 import '../../data/models/bg_model.dart';
 import '../providers/bg_providers.dart';
 import 'premium_inputs.dart';
@@ -105,15 +106,25 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
                 onPressed: () => _showUploadDialog(context),
               ),
               const SizedBox(width: 8),
-              _ActionButton(
-                icon: Icons.check_circle_outline_rounded,
-                label: 'Release',
-                color: AppColors.success,
-                filled: true,
-                onPressed: widget.bg.status == BgStatus.active
-                    ? () => _showReleaseDialog(context)
-                    : null,
-              ),
+              if (widget.bg.status == BgStatus.released) ...[
+                _ActionButton(
+                  icon: Icons.picture_as_pdf_rounded,
+                  label: 'Release Letter',
+                  color: AppColors.danger,
+                  filled: true,
+                  onPressed: () => _exportReleaseLetter(context),
+                ),
+              ] else ...[
+                _ActionButton(
+                  icon: Icons.check_circle_outline_rounded,
+                  label: 'Release',
+                  color: AppColors.success,
+                  filled: true,
+                  onPressed: widget.bg.status == BgStatus.active
+                      ? () => _showReleaseDialog(context)
+                      : null,
+                ),
+              ],
             ],
           ),
 
@@ -523,6 +534,32 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
         ],
       ),
     );
+  }
+
+  void _exportReleaseLetter(BuildContext context) async {
+    try {
+      final filePath = await ReleaseLetterService.generateReleaseLetter(
+        widget.bg,
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Release letter saved and opened: $filePath'),
+            backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error generating release letter: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
   }
 }
 

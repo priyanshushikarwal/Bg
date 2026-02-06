@@ -11,17 +11,22 @@ final bgRepositoryProvider = Provider<BgRepository>((ref) {
 // Filter State
 enum BgFilterType { all, active, expired, released, expiringWithin50Days }
 
+// Available firm list for the client
+const List<String> availableFirms = ['DoonInfra', 'BI High Power Tech', 'BI'];
+
 class BgFilterState {
   final BgFilterType filterType;
   final String? bankFilter;
   final String? discomFilter;
   final String searchQuery;
+  final String? firmFilter;
 
   const BgFilterState({
     this.filterType = BgFilterType.all,
     this.bankFilter,
     this.discomFilter,
     this.searchQuery = '',
+    this.firmFilter,
   });
 
   BgFilterState copyWith({
@@ -29,8 +34,10 @@ class BgFilterState {
     String? bankFilter,
     String? discomFilter,
     String? searchQuery,
+    String? firmFilter,
     bool clearBankFilter = false,
     bool clearDiscomFilter = false,
+    bool clearFirmFilter = false,
   }) {
     return BgFilterState(
       filterType: filterType ?? this.filterType,
@@ -39,6 +46,7 @@ class BgFilterState {
           ? null
           : (discomFilter ?? this.discomFilter),
       searchQuery: searchQuery ?? this.searchQuery,
+      firmFilter: clearFirmFilter ? null : (firmFilter ?? this.firmFilter),
     );
   }
 
@@ -46,7 +54,8 @@ class BgFilterState {
       filterType != BgFilterType.all ||
       bankFilter != null ||
       discomFilter != null ||
-      searchQuery.isNotEmpty;
+      searchQuery.isNotEmpty ||
+      firmFilter != null;
 }
 
 // Filter State Provider
@@ -79,6 +88,14 @@ class BgFilterNotifier extends StateNotifier<BgFilterState> {
     }
   }
 
+  void setFirmFilter(String? firm) {
+    if (firm == null) {
+      state = state.copyWith(clearFirmFilter: true);
+    } else {
+      state = state.copyWith(firmFilter: firm);
+    }
+  }
+
   void setSearchQuery(String query) {
     state = state.copyWith(searchQuery: query);
   }
@@ -101,6 +118,13 @@ final filteredBgsProvider = Provider<AsyncValue<List<BgModel>>>((ref) {
 
   return allBgsAsync.whenData((allBgs) {
     List<BgModel> filtered = allBgs;
+
+    // Apply firm filter first (primary filter)
+    if (filterState.firmFilter != null) {
+      filtered = filtered
+          .where((bg) => bg.firmName == filterState.firmFilter)
+          .toList();
+    }
 
     // Apply status filter
     switch (filterState.filterType) {
@@ -147,7 +171,8 @@ final filteredBgsProvider = Provider<AsyncValue<List<BgModel>>>((ref) {
         return bg.bgNumber.toLowerCase().contains(query) ||
             bg.bankName.toLowerCase().contains(query) ||
             bg.discom.toLowerCase().contains(query) ||
-            bg.tenderNumber.toLowerCase().contains(query);
+            bg.tenderNumber.toLowerCase().contains(query) ||
+            bg.firmName.toLowerCase().contains(query);
       }).toList();
     }
 
@@ -159,8 +184,16 @@ final filteredBgsProvider = Provider<AsyncValue<List<BgModel>>>((ref) {
 });
 
 // Dashboard Statistics Providers
-final dashboardStatsProvider = FutureProvider<DashboardStats>((ref) async {
-  final allBgs = HiveService.getAllBgs();
+final dashboardStatsProvider = Provider<DashboardStats>((ref) {
+  final filterState = ref.watch(bgFilterProvider);
+  var allBgs = HiveService.getAllBgs();
+
+  // Apply firm filter to stats
+  if (filterState.firmFilter != null) {
+    allBgs = allBgs
+        .where((bg) => bg.firmName == filterState.firmFilter)
+        .toList();
+  }
 
   final activeBgs = allBgs
       .where((bg) => bg.status == BgStatus.active && !bg.isExpired)
@@ -210,6 +243,11 @@ final bankNamesProvider = FutureProvider<Set<String>>((ref) async {
 // Discom Names Provider
 final discomNamesProvider = FutureProvider<Set<String>>((ref) async {
   return HiveService.getAllDiscoms();
+});
+
+// Firm Names Provider - using the predefined list
+final firmNamesProvider = Provider<List<String>>((ref) {
+  return availableFirms;
 });
 
 // Selected BG Provider (for detail view)

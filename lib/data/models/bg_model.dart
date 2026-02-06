@@ -59,6 +59,9 @@ class BgModel extends HiveObject {
   @HiveField(14)
   final DateTime updatedAt;
 
+  @HiveField(15)
+  final String firmName;
+
   BgModel({
     required this.id,
     required this.bgNumber,
@@ -75,6 +78,7 @@ class BgModel extends HiveObject {
     this.fdrDetails,
     required this.createdAt,
     required this.updatedAt,
+    this.firmName = 'DoonInfra',
   });
 
   BgModel copyWith({
@@ -93,6 +97,7 @@ class BgModel extends HiveObject {
     FdrModel? fdrDetails,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? firmName,
   }) {
     return BgModel(
       id: id ?? this.id,
@@ -110,6 +115,7 @@ class BgModel extends HiveObject {
       fdrDetails: fdrDetails ?? this.fdrDetails,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      firmName: firmName ?? this.firmName,
     );
   }
 

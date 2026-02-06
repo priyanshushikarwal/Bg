@@ -111,6 +111,14 @@ class HiveService {
     return bgBox.values.map((bg) => bg.discom).toSet();
   }
 
+  static Set<String> getAllFirmNames() {
+    return bgBox.values.map((bg) => bg.firmName).toSet();
+  }
+
+  static List<BgModel> filterBgsByFirm(String firmName) {
+    return bgBox.values.where((bg) => bg.firmName == firmName).toList();
+  }
+
   // Clear all data
   static Future<void> clearAllBgs() async {
     await bgBox.clear();

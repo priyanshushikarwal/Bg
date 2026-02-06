@@ -54,6 +54,7 @@ class DummyDataService {
           roi: 6.5,
         ),
         status: BgStatus.active,
+        firmName: 'DoonInfra',
       ),
       _createBg(
         bgNumber: 'BG/2024/002',
@@ -71,6 +72,7 @@ class DummyDataService {
           roi: 7.0,
         ),
         status: BgStatus.active,
+        firmName: 'BI High Power Tech',
       ),
       _createBg(
         bgNumber: 'BG/2024/003',
@@ -82,6 +84,7 @@ class DummyDataService {
         discom: _discoms[2],
         tenderNumber: 'TN/2024/DVVNL/003',
         status: BgStatus.active,
+        firmName: 'BI',
       ),
       _createBg(
         bgNumber: 'BG/2024/004',
@@ -107,6 +110,7 @@ class DummyDataService {
             remarks: 'First extension',
           ),
         ],
+        firmName: 'DoonInfra',
       ),
       _createBg(
         bgNumber: 'BG/2024/005',
@@ -138,6 +142,7 @@ class DummyDataService {
             remarks: 'Second extension',
           ),
         ],
+        firmName: 'BI High Power Tech',
       ),
       _createBg(
         bgNumber: 'BG/2024/006',
@@ -149,6 +154,7 @@ class DummyDataService {
         discom: _discoms[5],
         tenderNumber: 'TN/2024/KESCO/006',
         status: BgStatus.active,
+        firmName: 'BI',
       ),
       _createBg(
         bgNumber: 'BG/2024/007',
@@ -166,6 +172,7 @@ class DummyDataService {
           roi: 6.5,
         ),
         status: BgStatus.active,
+        firmName: 'DoonInfra',
       ),
       // Released BGs
       _createBg(
@@ -178,6 +185,7 @@ class DummyDataService {
         discom: _discoms[7],
         tenderNumber: 'TN/2023/TATA/008',
         status: BgStatus.released,
+        firmName: 'BI High Power Tech',
       ),
       _createBg(
         bgNumber: 'BG/2023/009',
@@ -189,6 +197,7 @@ class DummyDataService {
         discom: _discoms[1],
         tenderNumber: 'TN/2023/PVVNL/009',
         status: BgStatus.released,
+        firmName: 'BI',
       ),
       _createBg(
         bgNumber: 'BG/2023/010',
@@ -200,6 +209,7 @@ class DummyDataService {
         discom: _discoms[2],
         tenderNumber: 'TN/2023/DVVNL/010',
         status: BgStatus.released,
+        firmName: 'DoonInfra',
       ),
       // More active BGs for filtering demo
       _createBg(
@@ -218,6 +228,7 @@ class DummyDataService {
           roi: 7.0,
         ),
         status: BgStatus.active,
+        firmName: 'BI High Power Tech',
       ),
       _createBg(
         bgNumber: 'BG/2024/012',
@@ -229,6 +240,7 @@ class DummyDataService {
         discom: _discoms[0],
         tenderNumber: 'TN/2024/UPPCL/012',
         status: BgStatus.active,
+        firmName: 'BI',
       ),
     ];
 
@@ -247,6 +259,7 @@ class DummyDataService {
     required String bankName,
     required String discom,
     required String tenderNumber,
+    String firmName = 'DoonInfra',
     FdrModel? fdrDetails,
     BgStatus status = BgStatus.active,
     List<ExtensionModel>? extensionHistory,
@@ -268,6 +281,7 @@ class DummyDataService {
       fdrDetails: fdrDetails,
       createdAt: issueDate,
       updatedAt: DateTime.now(),
+      firmName: firmName,
     );
   }
 

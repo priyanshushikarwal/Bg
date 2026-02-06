@@ -11,13 +11,15 @@ import '../../widgets/common_widgets.dart';
 import '../../widgets/premium_buttons.dart';
 import '../../widgets/bg_expanded_details.dart';
 import '../dashboard/dashboard_screen.dart';
+import '../../../core/services/bg_report_service.dart';
 
 class BgManagementScreen extends ConsumerWidget {
   const BgManagementScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final allBgsAsync = ref.watch(allBgsProvider);
+    final filteredBgsAsync = ref.watch(filteredBgsProvider);
+    final filterState = ref.watch(bgFilterProvider);
 
     return Padding(
       padding: const EdgeInsets.all(AppDimensions.spaceLg),
@@ -52,20 +54,24 @@ class BgManagementScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  const Column(
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'BG Management',
-                        style: TextStyle(
+                        filterState.firmFilter != null
+                            ? '${filterState.firmFilter} BGs'
+                            : 'BG Management',
+                        style: const TextStyle(
                           color: AppColors.textPrimary,
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
-                        'Manage all your Bank Guarantees',
-                        style: TextStyle(
+                        filterState.firmFilter != null
+                            ? 'Bank Guarantees for ${filterState.firmFilter}'
+                            : 'Manage all your Bank Guarantees',
+                        style: const TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 14,
                         ),
@@ -74,10 +80,29 @@ class BgManagementScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              GradientButton(
-                text: 'Add New BG',
-                icon: Icons.add_rounded,
-                onPressed: () => _showAddBgDialog(context),
+              Row(
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        _exportBgReport(context, filteredBgsAsync, filterState),
+                    icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
+                    label: const Text('Export List'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  GradientButton(
+                    text: 'Add New BG',
+                    icon: Icons.add_rounded,
+                    onPressed: () => _showAddBgDialog(context),
+                  ),
+                ],
               ),
             ],
           ),
@@ -85,7 +110,7 @@ class BgManagementScreen extends ConsumerWidget {
           const SizedBox(height: AppDimensions.spaceLg),
 
           // Quick Stats
-          allBgsAsync.when(
+          filteredBgsAsync.when(
             data: (bgs) => _buildQuickStats(bgs),
             loading: () => const SizedBox(height: 80),
             error: (_, __) => const SizedBox(height: 80),
@@ -95,7 +120,7 @@ class BgManagementScreen extends ConsumerWidget {
 
           // Content Grid
           Expanded(
-            child: allBgsAsync.when(
+            child: filteredBgsAsync.when(
               data: (bgs) => _buildBgGrid(context, bgs),
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, _) => ErrorStateWidget(message: error.toString()),
@@ -269,6 +294,49 @@ class BgManagementScreen extends ConsumerWidget {
 
   void _showAddBgDialog(BuildContext context) {
     showDialog(context: context, builder: (context) => const AddBgDialog());
+  }
+
+  Future<void> _exportBgReport(
+    BuildContext context,
+    AsyncValue<List<BgModel>> filteredBgsAsync,
+    BgFilterState filterState,
+  ) async {
+    final bgs = filteredBgsAsync.valueOrNull;
+    if (bgs == null || bgs.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No bank guarantees to export'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final firmName = filterState.firmFilter ?? 'All Firms';
+      final filePath = await BgReportService.generateBgListReport(
+        bgs,
+        firmName,
+      );
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Report saved: $filePath'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error generating report: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
   }
 }
 

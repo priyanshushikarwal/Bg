@@ -148,6 +148,39 @@ class _BgTableRowState extends ConsumerState<BgTableRow>
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
+                                    Container(
+                                      width: 3,
+                                      height: 3,
+                                      margin: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                      ),
+                                      decoration: const BoxDecoration(
+                                        color: AppColors.textMuted,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: _getFirmColor(
+                                          widget.bg.firmName,
+                                        ).withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        widget.bg.firmName,
+                                        style: TextStyle(
+                                          color: _getFirmColor(
+                                            widget.bg.firmName,
+                                          ),
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
                                     if (widget.bg.extensionCount > 0) ...[
                                       Container(
                                         width: 3,
@@ -341,6 +374,19 @@ class _BgTableRowState extends ConsumerState<BgTableRow>
     if (widget.bg.isExpired) return 'Expired';
     if (widget.bg.isExpiringWithinDays(50)) return 'Expiring';
     return 'Active';
+  }
+
+  Color _getFirmColor(String firmName) {
+    switch (firmName) {
+      case 'DoonInfra':
+        return const Color(0xFF6366F1);
+      case 'BI High Power Tech':
+        return const Color(0xFFF59E0B);
+      case 'BI':
+        return const Color(0xFF10B981);
+      default:
+        return AppColors.primary;
+    }
   }
 }
 

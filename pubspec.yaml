@@ -28,6 +28,9 @@ dependencies:
   path_provider: ^2.1.5
   path: ^1.9.1
   
+  # PDF Generation
+  pdf: ^3.11.2
+  
   # Icons
   cupertino_icons: ^1.0.8
 

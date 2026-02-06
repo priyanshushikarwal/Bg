@@ -16,7 +16,7 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final statsAsync = ref.watch(dashboardStatsProvider);
+    final stats = ref.watch(dashboardStatsProvider);
     final filteredBgsAsync = ref.watch(filteredBgsProvider);
     final filterState = ref.watch(bgFilterProvider);
 
@@ -34,9 +34,11 @@ class DashboardScreen extends ConsumerWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Dashboard',
-                      style: TextStyle(
+                    Text(
+                      filterState.firmFilter != null
+                          ? '${filterState.firmFilter} Dashboard'
+                          : 'Dashboard',
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
@@ -45,7 +47,9 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Overview of your bank guarantees',
+                      filterState.firmFilter != null
+                          ? 'Bank guarantees for ${filterState.firmFilter}'
+                          : 'Overview of your bank guarantees',
                       style: TextStyle(
                         fontSize: 14,
                         color: AppColors.textSecondary,
@@ -61,17 +65,7 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: 24),
 
             // Stats Cards
-            statsAsync.when(
-              data: (stats) => _buildStatsCards(context, ref, stats),
-              loading: () => const SizedBox(
-                height: 120,
-                child: Center(child: CircularProgressIndicator()),
-              ),
-              error: (error, _) => SizedBox(
-                height: 120,
-                child: Center(child: Text('Error: $error')),
-              ),
-            ),
+            _buildStatsCards(context, ref, stats),
 
             const SizedBox(height: 24),
 
@@ -754,6 +748,7 @@ class _AddBgDialogState extends ConsumerState<AddBgDialog> {
 
   String? _selectedBank;
   String? _selectedDiscom;
+  String _selectedFirm = 'DoonInfra';
   bool _hasFdr = false;
 
   final List<String> _banks = [
@@ -777,6 +772,20 @@ class _AddBgDialogState extends ConsumerState<AddBgDialog> {
     'TORRENT POWER',
     'TATA POWER',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-select the firm based on current filter
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final filterState = ref.read(bgFilterProvider);
+      if (filterState.firmFilter != null) {
+        setState(() {
+          _selectedFirm = filterState.firmFilter!;
+        });
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -967,6 +976,17 @@ class _AddBgDialogState extends ConsumerState<AddBgDialog> {
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Firm selection
+                      _buildDropdownField(
+                        'Firm',
+                        _selectedFirm,
+                        availableFirms,
+                        (value) => setState(
+                          () => _selectedFirm = value ?? 'DoonInfra',
+                        ),
                       ),
 
                       const SizedBox(height: 24),
@@ -1192,6 +1212,7 @@ class _AddBgDialogState extends ConsumerState<AddBgDialog> {
           documents: [],
           createdAt: now,
           updatedAt: now,
+          firmName: _selectedFirm,
         );
 
         // Save to repository
