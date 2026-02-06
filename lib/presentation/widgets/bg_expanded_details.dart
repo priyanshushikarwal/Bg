@@ -83,6 +83,13 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
               const Spacer(),
               // Actions
               _ActionButton(
+                icon: Icons.edit_rounded,
+                label: 'Edit',
+                color: AppColors.warning,
+                onPressed: () => _showEditBgDialog(context),
+              ),
+              const SizedBox(width: 8),
+              _ActionButton(
                 icon: Icons.update_rounded,
                 label: 'Extend',
                 color: AppColors.primary,
@@ -476,6 +483,13 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
     );
   }
 
+  void _showEditBgDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => _EditBgDialog(bg: widget.bg, ref: ref),
+    );
+  }
+
   void _showReleaseDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -731,7 +745,21 @@ class _ExtendBgDialogState extends State<_ExtendBgDialog> {
   bool _isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Add listeners to update button state when text changes
+    _expiryDateController.addListener(_onTextChanged);
+    _claimExpiryDateController.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    setState(() {});
+  }
+
+  @override
   void dispose() {
+    _expiryDateController.removeListener(_onTextChanged);
+    _claimExpiryDateController.removeListener(_onTextChanged);
     _expiryDateController.dispose();
     _claimExpiryDateController.dispose();
     _remarksController.dispose();
@@ -1189,5 +1217,583 @@ class _LinkFdrDialogState extends State<_LinkFdrDialog> {
         );
     }
     setState(() => _isLoading = false);
+  }
+}
+
+// Edit BG Dialog
+class _EditBgDialog extends StatefulWidget {
+  final BgModel bg;
+  final WidgetRef ref;
+
+  const _EditBgDialog({required this.bg, required this.ref});
+
+  @override
+  State<_EditBgDialog> createState() => _EditBgDialogState();
+}
+
+class _EditBgDialogState extends State<_EditBgDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _bgNumberController;
+  late TextEditingController _amountController;
+  late TextEditingController _tenderController;
+  late TextEditingController _fdrNumberController;
+  late TextEditingController _fdrAmountController;
+  late TextEditingController _roiController;
+  late TextEditingController _issueDateController;
+  late TextEditingController _expiryDateController;
+  late TextEditingController _claimExpiryDateController;
+  late TextEditingController _fdrDateController;
+
+  String? _selectedBank;
+  String? _selectedDiscom;
+  bool _hasFdr = false;
+  bool _isLoading = false;
+
+  final List<String> _banks = [
+    'State Bank of India',
+    'HDFC Bank',
+    'ICICI Bank',
+    'Punjab National Bank',
+    'Bank of Baroda',
+    'Canara Bank',
+    'Axis Bank',
+    'Kotak Mahindra Bank',
+  ];
+
+  final List<String> _discoms = [
+    'UPPCL',
+    'PVVNL',
+    'DVVNL',
+    'MVVNL',
+    'PUVVNL',
+    'KESCO',
+    'TORRENT POWER',
+    'TATA POWER',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    final dateFormat = DateFormat('dd/MM/yyyy');
+
+    _bgNumberController = TextEditingController(text: widget.bg.bgNumber);
+    _amountController = TextEditingController(
+      text: widget.bg.amount.toStringAsFixed(0),
+    );
+    _tenderController = TextEditingController(text: widget.bg.tenderNumber);
+    _issueDateController = TextEditingController(
+      text: dateFormat.format(widget.bg.issueDate),
+    );
+    _expiryDateController = TextEditingController(
+      text: dateFormat.format(widget.bg.expiryDate),
+    );
+    _claimExpiryDateController = TextEditingController(
+      text: dateFormat.format(widget.bg.claimExpiryDate),
+    );
+
+    _selectedBank = widget.bg.bankName;
+    _selectedDiscom = widget.bg.discom;
+
+    // FDR details
+    _hasFdr = widget.bg.fdrDetails != null;
+    if (_hasFdr) {
+      final fdr = widget.bg.fdrDetails!;
+      _fdrNumberController = TextEditingController(text: fdr.fdrNumber);
+      _fdrAmountController = TextEditingController(
+        text: fdr.fdrAmount.toStringAsFixed(0),
+      );
+      _roiController = TextEditingController(text: fdr.roi.toString());
+      _fdrDateController = TextEditingController(
+        text: dateFormat.format(fdr.fdrDate),
+      );
+    } else {
+      _fdrNumberController = TextEditingController();
+      _fdrAmountController = TextEditingController();
+      _roiController = TextEditingController();
+      _fdrDateController = TextEditingController();
+    }
+  }
+
+  @override
+  void dispose() {
+    _bgNumberController.dispose();
+    _amountController.dispose();
+    _tenderController.dispose();
+    _fdrNumberController.dispose();
+    _fdrAmountController.dispose();
+    _roiController.dispose();
+    _issueDateController.dispose();
+    _expiryDateController.dispose();
+    _claimExpiryDateController.dispose();
+    _fdrDateController.dispose();
+    super.dispose();
+  }
+
+  DateTime? _parseDate(String text) => DateFormatterUtils.parseFlexible(text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        width: 560,
+        constraints: const BoxConstraints(maxHeight: 680),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: const BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.edit_rounded,
+                      color: AppColors.warning,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Edit Bank Guarantee',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Editing ${widget.bg.bgNumber}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded),
+                    style: IconButton.styleFrom(
+                      foregroundColor: AppColors.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const Divider(height: 1, color: AppColors.border),
+
+            // Form
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const _SectionLabel(title: 'BG Information'),
+                      const SizedBox(height: 16),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildTextField(
+                              controller: _bgNumberController,
+                              label: 'BG Number',
+                              icon: Icons.tag_rounded,
+                              required: true,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildTextField(
+                              controller: _amountController,
+                              label: 'Amount (₹)',
+                              icon: Icons.currency_rupee_rounded,
+                              required: true,
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: PremiumManualDateField(
+                              controller: _issueDateController,
+                              label: 'Issue Date',
+                              validator: (v) =>
+                                  v?.isEmpty ?? true ? 'Required' : null,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: PremiumManualDateField(
+                              controller: _expiryDateController,
+                              label: 'Expiry Date',
+                              validator: (v) =>
+                                  v?.isEmpty ?? true ? 'Required' : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: PremiumManualDateField(
+                              controller: _claimExpiryDateController,
+                              label: 'Claim Expiry Date',
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildTextField(
+                              controller: _tenderController,
+                              label: 'Tender Number',
+                              icon: Icons.description_outlined,
+                              required: true,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildDropdownField(
+                              'Bank Name',
+                              _selectedBank,
+                              _banks,
+                              (value) => setState(() => _selectedBank = value),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildDropdownField(
+                              'Discom',
+                              _selectedDiscom,
+                              _discoms,
+                              (value) =>
+                                  setState(() => _selectedDiscom = value),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // FDR Toggle
+                      Row(
+                        children: [
+                          const _SectionLabel(title: 'FDR Details'),
+                          const Spacer(),
+                          Switch(
+                            value: _hasFdr,
+                            onChanged: (value) =>
+                                setState(() => _hasFdr = value),
+                            activeColor: AppColors.primary,
+                          ),
+                        ],
+                      ),
+
+                      if (_hasFdr) ...[
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildTextField(
+                                controller: _fdrNumberController,
+                                label: 'FDR Number',
+                                icon: Icons.savings_outlined,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: PremiumManualDateField(
+                                controller: _fdrDateController,
+                                label: 'FDR Date',
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildTextField(
+                                controller: _fdrAmountController,
+                                label: 'FDR Amount (₹)',
+                                icon: Icons.currency_rupee_rounded,
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildTextField(
+                                controller: _roiController,
+                                label: 'ROI (%)',
+                                icon: Icons.percent_rounded,
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            const Divider(height: 1, color: AppColors.border),
+
+            // Actions
+            Container(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.textSecondary,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : _submitForm,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.warning,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Save Changes'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool required = false,
+    TextInputType? keyboardType,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        labelText: required ? '$label *' : label,
+        prefixIcon: Icon(icon, size: 20),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+      ),
+      validator: required
+          ? (value) => value?.isEmpty ?? true ? 'Required' : null
+          : null,
+    );
+  }
+
+  Widget _buildDropdownField(
+    String label,
+    String? value,
+    List<String> items,
+    Function(String?) onChanged,
+  ) {
+    return DropdownButtonFormField<String>(
+      value: items.contains(value) ? value : null,
+      decoration: InputDecoration(
+        labelText: '$label *',
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+      ),
+      items: items
+          .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+          .toList(),
+      onChanged: onChanged,
+      validator: (value) => value == null ? 'Required' : null,
+    );
+  }
+
+  void _submitForm() async {
+    final issueDate = _parseDate(_issueDateController.text);
+    final expiryDate = _parseDate(_expiryDateController.text);
+    final claimExpiryDate = _parseDate(_claimExpiryDateController.text);
+    final fdrDate = _parseDate(_fdrDateController.text);
+
+    if (_formKey.currentState!.validate() &&
+        issueDate != null &&
+        expiryDate != null) {
+      setState(() => _isLoading = true);
+
+      try {
+        // Create FDR if enabled
+        FdrModel? fdrDetails;
+        if (_hasFdr &&
+            _fdrNumberController.text.isNotEmpty &&
+            fdrDate != null) {
+          fdrDetails = FdrModel(
+            id:
+                widget.bg.fdrDetails?.id ??
+                DateTime.now().millisecondsSinceEpoch.toString(),
+            fdrNumber: _fdrNumberController.text,
+            fdrDate: fdrDate,
+            fdrAmount: double.tryParse(_fdrAmountController.text) ?? 0,
+            roi: double.tryParse(_roiController.text) ?? 0,
+          );
+        }
+
+        // Update BG
+        final updatedBg = widget.bg.copyWith(
+          bgNumber: _bgNumberController.text,
+          amount: double.tryParse(_amountController.text) ?? widget.bg.amount,
+          issueDate: issueDate,
+          expiryDate: expiryDate,
+          claimExpiryDate: claimExpiryDate ?? expiryDate,
+          bankName: _selectedBank ?? widget.bg.bankName,
+          discom: _selectedDiscom ?? widget.bg.discom,
+          tenderNumber: _tenderController.text,
+          fdrDetails: fdrDetails,
+          updatedAt: DateTime.now(),
+        );
+
+        // Save to repository
+        final repo = widget.ref.read(bgRepositoryProvider);
+        await repo.updateBg(updatedBg);
+
+        // Refresh the providers
+        widget.ref.invalidate(allBgsProvider);
+        widget.ref.invalidate(dashboardStatsProvider);
+
+        if (mounted) {
+          Navigator.pop(context);
+          // Close the details dialog too
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('BG ${updatedBg.bgNumber} updated successfully!'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: $e'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+      }
+
+      setState(() => _isLoading = false);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill all required fields'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+    }
+  }
+}
+
+// Section Label Widget
+class _SectionLabel extends StatelessWidget {
+  final String title;
+
+  const _SectionLabel({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+      ),
+    );
   }
 }
