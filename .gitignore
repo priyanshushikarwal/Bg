@@ -43,3 +43,21 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Supabase secrets - DO NOT commit API keys
+lib/core/constants/supabase_constants.dart
+
+# Node.js
+node_modules/
+package-lock.json
+package.json
+
+# Firebase
+.firebase/
+.firebaserc
+firebase.json
+
+# Others
+supabase_setup.sql
+*.zip
+build/

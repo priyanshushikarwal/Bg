@@ -1,13 +1,40 @@
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/bg_model.dart';
 import '../datasources/hive_service.dart';
+import '../../core/services/supabase_service.dart';
 
 class BgRepository {
   final _uuid = const Uuid();
 
-  // CRUD Operations
+  // ========== CRUD Operations ==========
+
   Future<List<BgModel>> getAllBgs() async {
-    return HiveService.getAllBgs();
+    // Always get local Hive data first (instant, never empty after add)
+    final localBgs = HiveService.getAllBgs();
+
+    try {
+      // If logged in, try to sync with Supabase in background
+      if (SupabaseService.isLoggedIn) {
+        final cloudBgs = await SupabaseService.fetchAllBgs();
+
+        // Only sync if Supabase actually returned data or local is empty
+        // This prevents wiping local data if Supabase tables are empty/missing
+        if (cloudBgs.isNotEmpty || localBgs.isEmpty) {
+          // Merge: upsert cloud BGs into Hive (don't clear first!)
+          for (final bg in cloudBgs) {
+            await HiveService.updateBg(bg);
+          }
+          return HiveService.getAllBgs(); // Return merged local+cloud data
+        }
+      }
+    } catch (e) {
+      // Supabase unavailable - silently use local cache
+      debugPrint('Supabase fetch failed, using local cache: $e');
+    }
+
+    // Return local Hive data (always has freshly added BGs)
+    return localBgs;
   }
 
   Future<BgModel?> getBgById(String id) async {
@@ -15,19 +42,52 @@ class BgRepository {
   }
 
   Future<void> addBg(BgModel bg) async {
+    // Save locally first (fast)
     await HiveService.addBg(bg);
+
+    // Then sync to Supabase cloud
+    if (SupabaseService.isLoggedIn) {
+      try {
+        await SupabaseService.upsertBg(bg);
+      } catch (e) {
+        print('Failed to sync BG to Supabase: $e');
+        // Data is still saved locally, will sync later
+      }
+    }
   }
 
   Future<void> updateBg(BgModel bg) async {
     final updatedBg = bg.copyWith(updatedAt: DateTime.now());
+
+    // Update locally
     await HiveService.updateBg(updatedBg);
+
+    // Sync to Supabase
+    if (SupabaseService.isLoggedIn) {
+      try {
+        await SupabaseService.upsertBg(updatedBg);
+      } catch (e) {
+        print('Failed to update BG in Supabase: $e');
+      }
+    }
   }
 
   Future<void> deleteBg(String id) async {
+    // Delete locally
     await HiveService.deleteBg(id);
+
+    // Delete from Supabase
+    if (SupabaseService.isLoggedIn) {
+      try {
+        await SupabaseService.deleteBg(id);
+      } catch (e) {
+        print('Failed to delete BG from Supabase: $e');
+      }
+    }
   }
 
-  // Filtering
+  // ========== Filtering ==========
+
   Future<List<BgModel>> getActiveBgs() async {
     return HiveService.getActiveBgs();
   }
@@ -56,7 +116,8 @@ class BgRepository {
     return HiveService.filterBgsByDiscom(discom);
   }
 
-  // BG Extension
+  // ========== BG Extension ==========
+
   Future<void> extendBg(String bgId, ExtensionModel extension) async {
     final bg = HiveService.getBg(bgId);
     if (bg != null) {
@@ -68,10 +129,19 @@ class BgRepository {
         updatedAt: DateTime.now(),
       );
       await HiveService.updateBg(updatedBg);
+
+      if (SupabaseService.isLoggedIn) {
+        try {
+          await SupabaseService.upsertBg(updatedBg);
+        } catch (e) {
+          print('Failed to sync extension to Supabase: $e');
+        }
+      }
     }
   }
 
-  // BG Release
+  // ========== BG Release ==========
+
   Future<void> releaseBg(String bgId) async {
     final bg = HiveService.getBg(bgId);
     if (bg != null) {
@@ -80,10 +150,19 @@ class BgRepository {
         updatedAt: DateTime.now(),
       );
       await HiveService.updateBg(updatedBg);
+
+      if (SupabaseService.isLoggedIn) {
+        try {
+          await SupabaseService.upsertBg(updatedBg);
+        } catch (e) {
+          print('Failed to sync release to Supabase: $e');
+        }
+      }
     }
   }
 
-  // Document Operations
+  // ========== Document Operations ==========
+
   Future<void> addDocument(String bgId, DocumentModel document) async {
     final bg = HiveService.getBg(bgId);
     if (bg != null) {
@@ -93,6 +172,14 @@ class BgRepository {
         updatedAt: DateTime.now(),
       );
       await HiveService.updateBg(updatedBg);
+
+      if (SupabaseService.isLoggedIn) {
+        try {
+          await SupabaseService.upsertBg(updatedBg);
+        } catch (e) {
+          print('Failed to sync document to Supabase: $e');
+        }
+      }
     }
   }
 
@@ -107,10 +194,19 @@ class BgRepository {
         updatedAt: DateTime.now(),
       );
       await HiveService.updateBg(updatedBg);
+
+      if (SupabaseService.isLoggedIn) {
+        try {
+          await SupabaseService.upsertBg(updatedBg);
+        } catch (e) {
+          print('Failed to sync to Supabase: $e');
+        }
+      }
     }
   }
 
-  // Statistics
+  // ========== Statistics ==========
+
   Future<double> getTotalBgAmount() async {
     return HiveService.getTotalBgAmount();
   }
@@ -139,7 +235,8 @@ class BgRepository {
     return HiveService.getAllDiscoms();
   }
 
-  // Create new BG
+  // ========== Factory Methods ==========
+
   BgModel createBg({
     required String bgNumber,
     required DateTime issueDate,
@@ -149,6 +246,7 @@ class BgRepository {
     required String bankName,
     required String discom,
     required String tenderNumber,
+    String firmName = 'DoonInfra',
     FdrModel? fdrDetails,
     List<DocumentModel>? documents,
   }) {
@@ -169,10 +267,10 @@ class BgRepository {
       fdrDetails: fdrDetails,
       createdAt: now,
       updatedAt: now,
+      firmName: firmName,
     );
   }
 
-  // Create new Extension
   ExtensionModel createExtension({
     required DateTime extensionDate,
     required DateTime newBgExpiryDate,
@@ -190,7 +288,6 @@ class BgRepository {
     );
   }
 
-  // Create new FDR
   FdrModel createFdr({
     required String fdrNumber,
     required DateTime fdrDate,
@@ -210,7 +307,6 @@ class BgRepository {
     );
   }
 
-  // Create new Document
   DocumentModel createDocument({
     required DocumentType type,
     int version = 1,

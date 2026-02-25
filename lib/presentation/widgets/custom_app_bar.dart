@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/supabase_service.dart';
 import '../providers/bg_providers.dart';
+import '../providers/auth_provider.dart';
 
 class CustomAppBar extends ConsumerWidget {
   final String title;
@@ -230,44 +233,128 @@ class _IconButtonState extends State<_IconButton> {
   }
 }
 
-class _ProfileAvatar extends StatefulWidget {
+class _ProfileAvatar extends ConsumerWidget {
   @override
-  State<_ProfileAvatar> createState() => _ProfileAvatarState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = SupabaseService.currentUser;
+    final email = user?.email ?? 'User';
+    final initial = email.isNotEmpty ? email[0].toUpperCase() : 'U';
 
-class _ProfileAvatarState extends State<_ProfileAvatar> {
-  bool _isHovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.all(2),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: _isHovered ? AppColors.primary : Colors.transparent,
-            width: 2,
+    return PopupMenuButton<String>(
+      tooltip: '',
+      offset: const Offset(0, 48),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          enabled: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Logged in as',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: AppColors.textMuted,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                email,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
           ),
         ),
-        child: Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            gradient: AppColors.blueGradient,
-            shape: BoxShape.circle,
-          ),
-          child: const Center(
-            child: Text(
-              'A',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: 'logout',
+          child: Row(
+            children: [
+              const Icon(
+                Icons.logout_rounded,
+                size: 18,
+                color: AppColors.danger,
               ),
+              const SizedBox(width: 10),
+              Text(
+                'Sign Out',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: AppColors.danger,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+      onSelected: (value) async {
+        if (value == 'logout') {
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Text(
+                'Sign Out',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+              ),
+              content: Text(
+                'Are you sure you want to sign out?',
+                style: GoogleFonts.inter(color: AppColors.textSecondary),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text('Cancel', style: GoogleFonts.inter()),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.danger,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    'Sign Out',
+                    style: GoogleFonts.inter(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          );
+          if (confirmed == true) {
+            await ref.read(authNotifierProvider.notifier).signOut();
+          }
+        }
+      },
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          gradient: AppColors.primaryGradient,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            initial,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),
