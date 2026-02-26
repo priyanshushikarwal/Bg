@@ -1,10 +1,25 @@
 #!/bin/bash
-echo "Cloning Flutter repository..."
-git clone https://github.com/flutter/flutter.git -b stable
+# Enable error output
+set -e
+
+# Disable interactive promps
+export CI=true
+
+echo "Cloning Flutter repository (shallow)..."
+git clone https://github.com/flutter/flutter.git -b stable --depth 1
+
 export PATH="$PATH:`pwd`/flutter/bin"
 
 echo "Flutter version:"
 flutter --version
 
+echo "Disabling analytics and enabling web..."
+flutter config --no-analytics
+
+echo "Running pub get..."
+flutter pub get
+
 echo "Building Flutter Web App..."
-flutter build web --release
+flutter build web --release --tree-shake-icons
+
+echo "Build successful!"
