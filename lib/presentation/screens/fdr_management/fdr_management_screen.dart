@@ -11,6 +11,7 @@ import '../../widgets/common_widgets.dart';
 import '../../widgets/premium_buttons.dart';
 import '../../widgets/premium_inputs.dart';
 import '../../../core/utils/date_utils.dart';
+import 'package:uuid/uuid.dart';
 
 class FdrManagementScreen extends ConsumerWidget {
   const FdrManagementScreen({super.key});
@@ -690,7 +691,7 @@ class _AddFdrDialogState extends State<_AddFdrDialog> {
       final selectedBg = allBgs.firstWhere((bg) => bg.id == _selectedBgId);
 
       final fdr = FdrModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: const Uuid().v4(),
         fdrNumber: _fdrNumberController.text,
         fdrDate: fdrDate,
         fdrAmount: double.parse(_fdrAmountController.text),

@@ -11,6 +11,7 @@ import '../../widgets/glass_card.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/premium_buttons.dart';
 import '../../widgets/premium_inputs.dart';
+import 'package:uuid/uuid.dart';
 
 class DocumentsScreen extends ConsumerStatefulWidget {
   const DocumentsScreen({super.key});
@@ -563,7 +564,7 @@ class _UploadDocumentDialogState extends State<_UploadDocumentDialog> {
           .where((d) => d.type == _selectedType)
           .toList();
       final doc = DocumentModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: const Uuid().v4(),
         type: _selectedType!,
         fileName: _selectedFileName ?? 'document',
         filePath: _selectedFilePath!,

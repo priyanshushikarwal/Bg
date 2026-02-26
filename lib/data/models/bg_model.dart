@@ -78,7 +78,7 @@ class BgModel extends HiveObject {
     this.fdrDetails,
     required this.createdAt,
     required this.updatedAt,
-    this.firmName = 'DoonInfra',
+    required this.firmName,
   });
 
   BgModel copyWith({

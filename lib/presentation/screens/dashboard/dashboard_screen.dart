@@ -10,13 +10,14 @@ import '../../widgets/bg_table_row.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/premium_inputs.dart';
 import '../../../core/utils/date_utils.dart';
+import 'package:uuid/uuid.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final stats = ref.watch(dashboardStatsProvider);
+    final statsAsync = ref.watch(dashboardStatsProvider);
     final filteredBgsAsync = ref.watch(filteredBgsProvider);
     final filterState = ref.watch(bgFilterProvider);
 
@@ -65,7 +66,17 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: 24),
 
             // Stats Cards
-            _buildStatsCards(context, ref, stats),
+            statsAsync.when(
+              data: (stats) => _buildStatsCards(context, ref, stats),
+              loading: () => const SizedBox(
+                height: 100,
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (e, _) => SizedBox(
+                height: 100,
+                child: Center(child: Text('Error loading stats: $e')),
+              ),
+            ),
 
             const SizedBox(height: 24),
 
@@ -1186,7 +1197,7 @@ class _AddBgDialogState extends ConsumerState<AddBgDialog> {
             _fdrNumberController.text.isNotEmpty &&
             fdrDate != null) {
           fdrDetails = FdrModel(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            id: const Uuid().v4(),
             fdrNumber: _fdrNumberController.text,
             fdrDate: fdrDate,
             fdrAmount: double.tryParse(_fdrAmountController.text) ?? 0,
@@ -1197,7 +1208,7 @@ class _AddBgDialogState extends ConsumerState<AddBgDialog> {
         // Create BG
         final now = DateTime.now();
         final bg = BgModel(
-          id: now.millisecondsSinceEpoch.toString(),
+          id: const Uuid().v4(),
           bgNumber: _bgNumberController.text,
           amount: double.tryParse(_amountController.text) ?? 0,
           issueDate: issueDate,

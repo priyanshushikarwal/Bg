@@ -8,6 +8,7 @@ import '../../data/models/bg_model.dart';
 import '../providers/bg_providers.dart';
 import 'premium_inputs.dart';
 import '../../core/utils/date_utils.dart';
+import 'package:uuid/uuid.dart';
 
 class BgExpandedDetails extends ConsumerStatefulWidget {
   final BgModel bg;
@@ -887,7 +888,7 @@ class _ExtendBgDialogState extends State<_ExtendBgDialog> {
     setState(() => _isLoading = true);
     try {
       final extension = ExtensionModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: const Uuid().v4(),
         extensionDate: DateTime.now(),
         newBgExpiryDate: newExpiryDate,
         newClaimExpiryDate: newClaimExpiryDate,
@@ -1079,7 +1080,7 @@ class _UploadDocumentDialogState extends State<_UploadDocumentDialog> {
           .where((d) => d.type == _selectedType)
           .toList();
       final doc = DocumentModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: const Uuid().v4(),
         type: _selectedType!,
         fileName: _selectedFileName ?? 'document',
         filePath: _selectedFilePath!,
@@ -1232,7 +1233,7 @@ class _LinkFdrDialogState extends State<_LinkFdrDialog> {
     setState(() => _isLoading = true);
     try {
       final fdr = FdrModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: const Uuid().v4(),
         fdrNumber: _fdrNumberController.text,
         fdrDate: fdrDate,
         fdrAmount: double.parse(_fdrAmountController.text),
@@ -1750,9 +1751,7 @@ class _EditBgDialogState extends State<_EditBgDialog> {
             _fdrNumberController.text.isNotEmpty &&
             fdrDate != null) {
           fdrDetails = FdrModel(
-            id:
-                widget.bg.fdrDetails?.id ??
-                DateTime.now().millisecondsSinceEpoch.toString(),
+            id: widget.bg.fdrDetails?.id ?? const Uuid().v4(),
             fdrNumber: _fdrNumberController.text,
             fdrDate: fdrDate,
             fdrAmount: double.tryParse(_fdrAmountController.text) ?? 0,

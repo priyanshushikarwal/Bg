@@ -1,7 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/bg_model.dart';
-import '../datasources/hive_service.dart';
 import '../../core/services/supabase_service.dart';
 
 class BgRepository {
@@ -10,116 +8,83 @@ class BgRepository {
   // ========== CRUD Operations ==========
 
   Future<List<BgModel>> getAllBgs() async {
-    // Always get local Hive data first (instant, never empty after add)
-    final localBgs = HiveService.getAllBgs();
-
-    try {
-      // If logged in, try to sync with Supabase in background
-      if (SupabaseService.isLoggedIn) {
-        final cloudBgs = await SupabaseService.fetchAllBgs();
-
-        // Only sync if Supabase actually returned data or local is empty
-        // This prevents wiping local data if Supabase tables are empty/missing
-        if (cloudBgs.isNotEmpty || localBgs.isEmpty) {
-          // Merge: upsert cloud BGs into Hive (don't clear first!)
-          for (final bg in cloudBgs) {
-            await HiveService.updateBg(bg);
-          }
-          return HiveService.getAllBgs(); // Return merged local+cloud data
-        }
-      }
-    } catch (e) {
-      // Supabase unavailable - silently use local cache
-      debugPrint('Supabase fetch failed, using local cache: $e');
-    }
-
-    // Return local Hive data (always has freshly added BGs)
-    return localBgs;
+    return await SupabaseService.fetchAllBgs();
   }
 
   Future<BgModel?> getBgById(String id) async {
-    return HiveService.getBg(id);
+    final allBgs = await SupabaseService.fetchAllBgs();
+    try {
+      return allBgs.firstWhere((bg) => bg.id == id);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> addBg(BgModel bg) async {
-    // Save locally first (fast)
-    await HiveService.addBg(bg);
-
-    // Then sync to Supabase cloud
-    if (SupabaseService.isLoggedIn) {
-      try {
-        await SupabaseService.upsertBg(bg);
-      } catch (e) {
-        print('Failed to sync BG to Supabase: $e');
-        // Data is still saved locally, will sync later
-      }
-    }
+    await SupabaseService.upsertBg(bg);
   }
 
   Future<void> updateBg(BgModel bg) async {
     final updatedBg = bg.copyWith(updatedAt: DateTime.now());
-
-    // Update locally
-    await HiveService.updateBg(updatedBg);
-
-    // Sync to Supabase
-    if (SupabaseService.isLoggedIn) {
-      try {
-        await SupabaseService.upsertBg(updatedBg);
-      } catch (e) {
-        print('Failed to update BG in Supabase: $e');
-      }
-    }
+    await SupabaseService.upsertBg(updatedBg);
   }
 
   Future<void> deleteBg(String id) async {
-    // Delete locally
-    await HiveService.deleteBg(id);
-
-    // Delete from Supabase
-    if (SupabaseService.isLoggedIn) {
-      try {
-        await SupabaseService.deleteBg(id);
-      } catch (e) {
-        print('Failed to delete BG from Supabase: $e');
-      }
-    }
+    await SupabaseService.deleteBg(id);
   }
 
-  // ========== Filtering ==========
+  // ========== Filtering (done in-memory from fetched data) ==========
 
   Future<List<BgModel>> getActiveBgs() async {
-    return HiveService.getActiveBgs();
+    final allBgs = await getAllBgs();
+    return allBgs
+        .where((bg) => bg.status == BgStatus.active && !bg.isExpired)
+        .toList();
   }
 
   Future<List<BgModel>> getExpiredBgs() async {
-    return HiveService.getExpiredBgs();
+    final allBgs = await getAllBgs();
+    return allBgs
+        .where((bg) => bg.isExpired || bg.status == BgStatus.expired)
+        .toList();
   }
 
   Future<List<BgModel>> getReleasedBgs() async {
-    return HiveService.getReleasedBgs();
+    final allBgs = await getAllBgs();
+    return allBgs.where((bg) => bg.status == BgStatus.released).toList();
   }
 
   Future<List<BgModel>> getBgsExpiringWithinDays(int days) async {
-    return HiveService.getBgsExpiringWithinDays(days);
+    final allBgs = await getAllBgs();
+    return allBgs.where((bg) => bg.isExpiringWithinDays(days)).toList();
   }
 
   Future<List<BgModel>> searchBgs(String query) async {
-    return HiveService.searchBgs(query);
+    final allBgs = await getAllBgs();
+    final q = query.toLowerCase();
+    return allBgs.where((bg) {
+      return bg.bgNumber.toLowerCase().contains(q) ||
+          bg.bankName.toLowerCase().contains(q) ||
+          bg.discom.toLowerCase().contains(q) ||
+          bg.tenderNumber.toLowerCase().contains(q) ||
+          bg.firmName.toLowerCase().contains(q);
+    }).toList();
   }
 
   Future<List<BgModel>> filterByBank(String bankName) async {
-    return HiveService.filterBgsByBank(bankName);
+    final allBgs = await getAllBgs();
+    return allBgs.where((bg) => bg.bankName == bankName).toList();
   }
 
   Future<List<BgModel>> filterByDiscom(String discom) async {
-    return HiveService.filterBgsByDiscom(discom);
+    final allBgs = await getAllBgs();
+    return allBgs.where((bg) => bg.discom == discom).toList();
   }
 
   // ========== BG Extension ==========
 
   Future<void> extendBg(String bgId, ExtensionModel extension) async {
-    final bg = HiveService.getBg(bgId);
+    final bg = await getBgById(bgId);
     if (bg != null) {
       final updatedExtensions = [...bg.extensionHistory, extension];
       final updatedBg = bg.copyWith(
@@ -128,63 +93,39 @@ class BgRepository {
         claimExpiryDate: extension.newClaimExpiryDate,
         updatedAt: DateTime.now(),
       );
-      await HiveService.updateBg(updatedBg);
-
-      if (SupabaseService.isLoggedIn) {
-        try {
-          await SupabaseService.upsertBg(updatedBg);
-        } catch (e) {
-          print('Failed to sync extension to Supabase: $e');
-        }
-      }
+      await SupabaseService.upsertBg(updatedBg);
     }
   }
 
   // ========== BG Release ==========
 
   Future<void> releaseBg(String bgId) async {
-    final bg = HiveService.getBg(bgId);
+    final bg = await getBgById(bgId);
     if (bg != null) {
       final updatedBg = bg.copyWith(
         status: BgStatus.released,
         updatedAt: DateTime.now(),
       );
-      await HiveService.updateBg(updatedBg);
-
-      if (SupabaseService.isLoggedIn) {
-        try {
-          await SupabaseService.upsertBg(updatedBg);
-        } catch (e) {
-          print('Failed to sync release to Supabase: $e');
-        }
-      }
+      await SupabaseService.upsertBg(updatedBg);
     }
   }
 
   // ========== Document Operations ==========
 
   Future<void> addDocument(String bgId, DocumentModel document) async {
-    final bg = HiveService.getBg(bgId);
+    final bg = await getBgById(bgId);
     if (bg != null) {
       final updatedDocuments = [...bg.documents, document];
       final updatedBg = bg.copyWith(
         documents: updatedDocuments,
         updatedAt: DateTime.now(),
       );
-      await HiveService.updateBg(updatedBg);
-
-      if (SupabaseService.isLoggedIn) {
-        try {
-          await SupabaseService.upsertBg(updatedBg);
-        } catch (e) {
-          print('Failed to sync document to Supabase: $e');
-        }
-      }
+      await SupabaseService.upsertBg(updatedBg);
     }
   }
 
   Future<void> removeDocument(String bgId, String documentId) async {
-    final bg = HiveService.getBg(bgId);
+    final bg = await getBgById(bgId);
     if (bg != null) {
       final updatedDocuments = bg.documents
           .where((d) => d.id != documentId)
@@ -193,46 +134,47 @@ class BgRepository {
         documents: updatedDocuments,
         updatedAt: DateTime.now(),
       );
-      await HiveService.updateBg(updatedBg);
-
-      if (SupabaseService.isLoggedIn) {
-        try {
-          await SupabaseService.upsertBg(updatedBg);
-        } catch (e) {
-          print('Failed to sync to Supabase: $e');
-        }
-      }
+      await SupabaseService.upsertBg(updatedBg);
     }
   }
 
   // ========== Statistics ==========
 
   Future<double> getTotalBgAmount() async {
-    return HiveService.getTotalBgAmount();
+    final allBgs = await getActiveBgs();
+    return allBgs.fold<double>(0, (sum, bg) => sum + bg.amount);
   }
 
   Future<double> getTotalFdrAmount() async {
-    return HiveService.getTotalFdrAmount();
+    final allBgs = await getAllBgs();
+    return allBgs
+        .where((bg) => bg.fdrDetails != null)
+        .fold<double>(0, (sum, bg) => sum + (bg.fdrDetails?.fdrAmount ?? 0));
   }
 
   Future<int> getActiveBgCount() async {
-    return HiveService.getActiveBgCount();
+    return (await getActiveBgs()).length;
   }
 
   Future<int> getExpiringBgCount(int days) async {
-    return HiveService.getExpiringBgCount(days);
+    return (await getBgsExpiringWithinDays(days)).length;
   }
 
   Future<int> getReleasedBgCount() async {
-    return HiveService.getReleasedBgCount();
+    return (await getReleasedBgs()).length;
   }
 
   Future<Set<String>> getAllBankNames() async {
-    return HiveService.getAllBankNames();
+    final allBgs = await getAllBgs();
+    return allBgs
+        .map((bg) => bg.bankName)
+        .where((name) => name.isNotEmpty)
+        .toSet();
   }
 
   Future<Set<String>> getAllDiscoms() async {
-    return HiveService.getAllDiscoms();
+    final allBgs = await getAllBgs();
+    return allBgs.map((bg) => bg.discom).where((d) => d.isNotEmpty).toSet();
   }
 
   // ========== Factory Methods ==========

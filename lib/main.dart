@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/theme/app_theme.dart';
 import 'core/services/supabase_service.dart';
-import 'data/datasources/hive_service.dart';
-import 'data/datasources/dummy_data_service.dart';
 import 'presentation/screens/home_screen.dart';
 import 'presentation/screens/auth/login_screen.dart';
 
@@ -13,14 +11,6 @@ void main() async {
 
   // Initialize Supabase
   await SupabaseService.init();
-
-  // Initialize Hive (local cache)
-  await HiveService.init();
-
-  // Load dummy data only if not logged in and local db is empty
-  if (!SupabaseService.isLoggedIn) {
-    await DummyDataService.loadDummyData();
-  }
 
   runApp(const ProviderScope(child: BgManagerApp()));
 }

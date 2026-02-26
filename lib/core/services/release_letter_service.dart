@@ -7,294 +7,300 @@ import 'file_save_helper.dart';
 class ReleaseLetterService {
   static final _currencyFormat = NumberFormat.currency(
     locale: 'en_IN',
-    symbol: '', // No symbol in the table cell based on image
-    decimalDigits: 2,
+    symbol: 'Rs. ',
+    decimalDigits: 0,
   );
   static final _dateFormat = DateFormat('dd/MM/yyyy');
-  static final _letterDateFormat = DateFormat('dd MMM yyyy');
 
-  /// Generates a PDF release letter matching the AVVNL formal style
+  /// Generates a PDF release letter matching the Firm-to-Bank style from the image
   static Future<String> generateReleaseLetter(BgModel bg) async {
     final pdf = pw.Document();
 
-    // Define basic styles
-    final textStyle = pw.TextStyle(fontSize: 10, font: pw.Font.times());
-    final boldStyle = pw.TextStyle(
-      fontSize: 10,
-      fontWeight: pw.FontWeight.bold,
-      font: pw.Font.timesBold(),
-    );
-    final headerStyle = pw.TextStyle(
-      fontSize: 14,
-      fontWeight: pw.FontWeight.bold,
-      font: pw.Font.timesBold(),
-    );
-
-    // Fallback if discom is empty
-    final orgName = bg.discom.isNotEmpty
-        ? bg.discom.toUpperCase()
-        : 'AJMER VIDYUT VITRAN NIGAM LIMITED';
+    // Standard A4 margin is 0.5 - 1 inch
+    const pageMargin = pw.EdgeInsets.all(40);
 
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(30),
+        margin: pageMargin,
         build: (pw.Context context) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
+          final textStyle = pw.TextStyle(
+            fontSize: 10.5,
+            font: pw.Font.times(),
+            lineSpacing: 1.5,
+          );
+          final boldStyle = pw.TextStyle(
+            fontSize: 10.5,
+            fontWeight: pw.FontWeight.bold,
+            font: pw.Font.timesBold(),
+          );
+          final titleStyle = pw.TextStyle(
+            fontSize: 22,
+            fontWeight: pw.FontWeight.bold,
+            font: pw.Font.timesBold(),
+          );
+          final subHeaderStyle = pw.TextStyle(
+            fontSize: 11,
+            font: pw.Font.times(),
+          );
+
+          // Dynamic Reference Prefix based on Firm Name initials
+          final firmInitials = bg.firmName
+              .split(' ')
+              .map((e) => e.isNotEmpty ? e[0] : '')
+              .join('')
+              .toUpperCase();
+          final currentYear = DateTime.now().year;
+          final fiscalYear = '${currentYear % 100}-${(currentYear + 1) % 100}';
+          final refNo = 'Ref $firmInitials/$fiscalYear/';
+
+          return pw.Stack(
             children: [
-              // --- Header Section ---
-              pw.Row(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  // Logo Placeholder
-                  pw.Container(
-                    width: 50,
-                    height: 50,
-                    decoration: pw.BoxDecoration(
-                      border: pw.Border.all(color: PdfColors.black, width: 2),
-                      shape: pw.BoxShape.circle,
-                    ),
-                    child: pw.Center(
-                      child: pw.Text("LOGO", style: pw.TextStyle(fontSize: 8)),
+              // --- Watermark ---
+              pw.Center(
+                child: pw.Transform.rotate(
+                  angle: -0.5,
+                  child: pw.Text(
+                    bg.firmName.split(' ').take(3).join(' ').toUpperCase(),
+                    style: pw.TextStyle(
+                      fontSize: 80,
+                      color: PdfColors.grey200, // Very light grey
+                      fontWeight: pw.FontWeight.bold,
                     ),
                   ),
-                  pw.SizedBox(width: 15),
-                  // Center Text
-                  pw.Expanded(
+                ),
+              ),
+
+              // --- Body Content ---
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  // --- Header Section ---
+                  pw.Center(
                     child: pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.center,
                       children: [
-                        pw.Align(
-                          alignment: pw.Alignment.centerRight,
-                          child: pw.Text('ID No.   50,483', style: boldStyle),
-                        ),
                         pw.Text(
-                          orgName,
-                          style: headerStyle,
+                          'M/s ${bg.firmName.toUpperCase()}',
+                          style: titleStyle,
                           textAlign: pw.TextAlign.center,
-                        ),
-                        pw.SizedBox(height: 4),
-                        pw.Text(
-                          'OFFICE OF THE ACCOUNTS OFFICER(MM)',
-                          style: boldStyle,
                         ),
                         pw.SizedBox(height: 2),
                         pw.Text(
-                          'Corporate Identification Number (CIN)-U40109RJ2000SGC016482',
-                          style: textStyle,
+                          '16A, JAMANA COLONY, VIDHYADHAR NAGAR, JAIPUR 302039',
+                          style: subHeaderStyle,
                         ),
-                        pw.Text(
-                          'Registered Office: Vidyut Bhawan, Makarwali Road, Panchsheel Nagar, Ajmer-305004',
-                          style: textStyle,
-                          textAlign: pw.TextAlign.center,
+                        pw.SizedBox(height: 2),
+                        pw.Row(
+                          mainAxisAlignment: pw.MainAxisAlignment.center,
+                          children: [
+                            pw.Text('EMAIL ID : ', style: subHeaderStyle),
+                            pw.Text(
+                              'bhitech2021@gmail.com',
+                              style: subHeaderStyle.copyWith(
+                                color: PdfColors.blue,
+                                decoration: pw.TextDecoration.underline,
+                              ),
+                            ),
+                            pw.Text(
+                              ' Mob No. 6376270060',
+                              style: subHeaderStyle,
+                            ),
+                          ],
                         ),
-                        pw.Text(
-                          'Phone : +0145-2642530. Fax: +91-0145-2644542; Email:aommavvnl@gmail.com',
-                          style: textStyle,
-                          textAlign: pw.TextAlign.center,
-                        ),
-                        pw.Text(
-                          'Web site - http://energy.rajasthan.gov.in/avvnl',
-                          style: textStyle,
-                          textAlign: pw.TextAlign.center,
+                        pw.SizedBox(height: 8),
+                        pw.Container(
+                          height: 1.5,
+                          color: PdfColor.fromHex(
+                            '#800000',
+                          ), // Dark red/maroon line
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-              pw.SizedBox(height: 10),
-              pw.Divider(thickness: 1),
-              pw.SizedBox(height: 5),
 
-              // --- Ref No & Date ---
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text(
-                    'No. $orgName/ AO(MM)- Sec-IV/XEN( MM-)/ TN-${bg.tenderNumber}/D',
-                    style: boldStyle,
-                  ),
-                  pw.Transform.rotate(
-                    angle: -0.1,
-                    child: pw.Text(
-                      '1609',
-                      style: pw.TextStyle(
-                        fontSize: 12,
-                        font: pw.Font.courier(),
-                        color: PdfColors.blue,
-                      ),
-                    ),
-                  ), // Simulated stamp/handwritten number
-                  pw.Text(
-                    'Dt  ${_letterDateFormat.format(DateTime.now()).toUpperCase()}',
-                    style: boldStyle,
-                  ),
-                ],
-              ),
-              pw.SizedBox(height: 15),
+                  pw.SizedBox(height: 15),
 
-              // --- To Address ---
-              pw.Text('The Manager,', style: textStyle),
-              pw.Text(bg.bankName, style: textStyle),
-              pw.Text(
-                '2nd floor , Krishna Towers, Plot No.57, Sardar Patel Marg, C- Scheme, Jaipur',
-                style: textStyle,
-              ), // Placeholder address as we don't have bank address in model
-
-              pw.SizedBox(height: 15),
-
-              // --- Subject ---
-              pw.RichText(
-                text: pw.TextSpan(
-                  children: [
-                    pw.TextSpan(text: 'Sub: ', style: boldStyle),
-                    pw.TextSpan(
-                      text:
-                          'Release/Cancellation of Bank Guarantee(s) against P.O.No.$orgName/SE(MM)/XENMM-)/${bg.tenderNumber}/P.O.No. furnished on behalf of M/s ',
-                      style: textStyle,
-                    ),
-                    pw.TextSpan(
-                      text: bg.firmName.toUpperCase(),
-                      style: boldStyle,
-                    ),
-                    pw.TextSpan(
-                      text: ', Contact No. - 9414050061, 8764237761',
-                      style: textStyle,
-                    ),
-                  ],
-                ),
-              ),
-
-              pw.SizedBox(height: 10),
-              pw.Text('Dear Sir,', style: textStyle),
-              pw.Text(
-                'With reference to above, it is to intimate you that under mentioned Bank Guarantee furnished by you against subject purchase order has been released/cancelled.',
-                style: textStyle,
-                textAlign: pw.TextAlign.justify,
-              ),
-
-              pw.SizedBox(height: 15),
-
-              // --- Table ---
-              pw.Table(
-                border: pw.TableBorder.all(width: 1),
-                columnWidths: {
-                  0: const pw.FixedColumnWidth(40), // Sr No
-                  1: const pw.FixedColumnWidth(80), // Kind of BG
-                  2: const pw.FlexColumnWidth(2), // BG No & Date
-                  3: const pw.FlexColumnWidth(1.5), // Amount
-                  4: const pw.FixedColumnWidth(80), // Validity
-                },
-                children: [
-                  // Header Row
-                  pw.TableRow(
+                  // --- Ref & Date ---
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildHeaderCell('Sr. No.', boldStyle),
-                      _buildHeaderCell('Kind of BG', boldStyle),
-                      _buildHeaderCell('BG No. & Date', boldStyle),
-                      _buildHeaderCell('Amount in Rs.', boldStyle),
-                      _buildHeaderCell('Validity', boldStyle),
-                    ],
-                  ),
-                  // Data Row
-                  pw.TableRow(
-                    children: [
-                      _buildCell('1', textStyle),
-                      _buildCell(
-                        'BG',
-                        boldStyle,
-                      ), // Assuming generic BG type for now
-                      _buildCell(
-                        '${bg.bgNumber}\n\n${_dateFormat.format(bg.issueDate)}',
-                        boldStyle,
-                      ),
-                      _buildCell(_currencyFormat.format(bg.amount), boldStyle),
-                      _buildCell(
-                        _dateFormat.format(bg.currentExpiryDate),
-                        boldStyle,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-
-              pw.SizedBox(height: 15),
-
-              // --- Footer Text ---
-              pw.Text(
-                'The Release / Cancellation of above BG is without prejudice to the terms and conditions of subject purchase order the original BG duly discharged/cancelled is enclosed , herewith,',
-                style: textStyle,
-                textAlign: pw.TextAlign.justify,
-              ),
-              pw.Text('Thanking you', style: textStyle),
-
-              pw.SizedBox(height: 20),
-
-              // --- Signatories ---
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.end,
-                children: [
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.center,
-                    children: [
-                      pw.Text('Yours sincerely', style: textStyle),
-                      pw.SizedBox(height: 20),
-                      // Mock Signature
-                      pw.Container(
-                        child: pw.Text(
-                          "Sig.",
-                          style: pw.TextStyle(
-                            font: pw.Font.zapfDingbats(),
-                            fontSize: 20,
-                          ),
-                        ),
-                      ),
-                      pw.Text('(R.C. Somani)', style: boldStyle),
+                      pw.Text(refNo, style: boldStyle),
                       pw.Text(
-                        'Asstt. Accounts Officer-I(MM)',
+                        'Date ${_dateFormat.format(DateTime.now())}',
                         style: boldStyle,
                       ),
-                      pw.Text('$orgName, Ajmer', style: boldStyle),
                     ],
                   ),
-                ],
-              ),
 
-              pw.SizedBox(height: 20),
+                  pw.SizedBox(height: 20),
 
-              // --- Encl & Copy To ---
-              pw.Text('Encl: As above', style: textStyle),
-              pw.Text('Copy to : -', style: textStyle),
-              pw.SizedBox(height: 5),
-              pw.Text(
-                '1. The Executive Engineer(MM-E 1), $orgName, ajmer.BG(s) has/have been released in in compliance of release order No  14289  Dt.${_dateFormat.format(DateTime.now())} issued by the SE.(MM)$orgName,Ajmer',
-                style: textStyle,
-              ),
-              pw.SizedBox(height: 5),
-              pw.Text(
-                '2. M/s. ${bg.firmName}, [Address Placeholder]',
-                style: textStyle,
-              ),
-              pw.SizedBox(height: 20),
-              pw.Align(
-                alignment: pw.Alignment.centerRight,
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.center,
-                  children: [
-                    pw.Container(
-                      child: pw.Text(
-                        "Sig.",
-                        style: pw.TextStyle(
-                          font: pw.Font.zapfDingbats(),
-                          fontSize: 20,
+                  // --- To Section ---
+                  pw.Text('To,', style: boldStyle),
+                  pw.Text('The Branch Manager', style: boldStyle),
+                  pw.Text(bg.bankName, style: boldStyle),
+                  pw.Text('Branch', style: boldStyle),
+
+                  pw.SizedBox(height: 20),
+
+                  // --- Subject ---
+                  pw.RichText(
+                    text: pw.TextSpan(
+                      children: [
+                        pw.TextSpan(
+                          text:
+                              'Subject: Submission of Original Bank Guarantee for Cancellation against TN -',
+                          style: boldStyle,
                         ),
-                      ), // Mock Signature
+                        pw.TextSpan(text: bg.tenderNumber, style: boldStyle),
+                        pw.TextSpan(
+                          text:
+                              '\nRef - ${bg.discom} Release Letter No. 16091 Dated ${_dateFormat.format(DateTime.now().subtract(const Duration(days: 30)))}.',
+                          style: boldStyle,
+                        ),
+                      ],
                     ),
-                    pw.Text('Asstt. Accounts Officer-I(MM)', style: boldStyle),
-                  ],
-                ),
+                  ),
+
+                  pw.SizedBox(height: 15),
+
+                  // --- Salutation ---
+                  pw.Text('Respected Sir/Madam,', style: textStyle),
+                  pw.SizedBox(height: 10),
+
+                  // --- Body 1 ---
+                  pw.RichText(
+                    textAlign: pw.TextAlign.justify,
+                    text: pw.TextSpan(
+                      style: textStyle,
+                      children: [
+                        pw.TextSpan(text: 'We hereby submit the '),
+                        pw.TextSpan(
+                          text: 'original Bank Guarantee',
+                          style: boldStyle,
+                        ),
+                        pw.TextSpan(
+                          text:
+                              ', as detailed below, for cancellation at your end.',
+                        ),
+                      ],
+                    ),
+                  ),
+                  pw.SizedBox(height: 10),
+
+                  // --- Body 2 ---
+                  pw.RichText(
+                    textAlign: pw.TextAlign.justify,
+                    text: pw.TextSpan(
+                      style: textStyle,
+                      children: [
+                        pw.TextSpan(
+                          text:
+                              'The said Bank Guarantee was issued by your bank in favor of ',
+                        ),
+                        pw.TextSpan(text: bg.discom, style: boldStyle),
+                        pw.TextSpan(text: ' against a tender '),
+                        pw.TextSpan(
+                          text: 'TN-${bg.tenderNumber}',
+                          style: boldStyle,
+                        ),
+                        pw.TextSpan(text: '. We have now received the '),
+                        pw.TextSpan(
+                          text:
+                              'original Bank Guarantee along with the official BG Cancellation / Discharge Letter',
+                          style: boldStyle,
+                        ),
+                        pw.TextSpan(text: ' from the concerned DISCOM.'),
+                      ],
+                    ),
+                  ),
+                  pw.SizedBox(height: 10),
+
+                  // --- Body 3 ---
+                  pw.RichText(
+                    textAlign: pw.TextAlign.justify,
+                    text: pw.TextSpan(
+                      style: textStyle,
+                      children: [
+                        pw.TextSpan(
+                          text:
+                              'As the purpose of the Bank Guarantee has been duly completed and no further claim remains, we kindly request you to ',
+                        ),
+                        pw.TextSpan(
+                          text:
+                              'cancel the above-mentioned Bank Guarantee and release the related margin / FD / lien amount',
+                          style: boldStyle,
+                        ),
+                        pw.TextSpan(text: ', as applicable, at the earliest.'),
+                      ],
+                    ),
+                  ),
+
+                  pw.SizedBox(height: 20),
+
+                  // --- BG Details Section ---
+                  pw.Text('Bank Guarantee Details:', style: boldStyle),
+                  pw.SizedBox(height: 8),
+                  _buildBulletPoint(
+                    'BG Number: ',
+                    bg.bgNumber,
+                    boldStyle,
+                    textStyle,
+                  ),
+                  _buildBulletPoint(
+                    'BG Amount: ',
+                    '${_currencyFormat.format(bg.amount)}/-',
+                    boldStyle,
+                    textStyle,
+                  ),
+                  _buildBulletPoint(
+                    'Date of Issue: ',
+                    _dateFormat.format(bg.issueDate),
+                    boldStyle,
+                    textStyle,
+                  ),
+                  _buildBulletPoint(
+                    'Issued in favor of: ',
+                    bg.discom,
+                    boldStyle,
+                    textStyle,
+                  ),
+
+                  pw.SizedBox(height: 20),
+
+                  // --- Enclosures ---
+                  pw.Text('Enclosures:', style: boldStyle),
+                  pw.SizedBox(height: 8),
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.only(left: 10),
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text('1. Original Bank Guarantee', style: textStyle),
+                        pw.Text(
+                          '2. BG Cancellation / Discharge Letter issued by ${bg.discom}',
+                          style: textStyle,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  pw.SizedBox(height: 20),
+
+                  pw.Text(
+                    'We request you to kindly process the cancellation and confirm the same to us.',
+                    style: textStyle,
+                  ),
+                  pw.SizedBox(height: 15),
+                  pw.Text('Thanking you.', style: textStyle),
+                  pw.SizedBox(height: 10),
+                  pw.Text('Yours faithfully,', style: textStyle),
+                  pw.SizedBox(height: 15),
+                  pw.Text('For ${bg.firmName}', style: boldStyle),
+
+                  pw.Spacer(),
+
+                  pw.Text('Authorized Signatory', style: textStyle),
+                ],
               ),
             ],
           );
@@ -303,27 +309,37 @@ class ReleaseLetterService {
     );
 
     // Save logic
-    final fileName =
-        'Release_Letter_${bg.bgNumber.replaceAll('/', '_')}_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
+    final fileName = 'Release_Letter_${bg.bgNumber.replaceAll('/', '_')}.pdf';
     final bytes = await pdf.save();
 
-    // Delegate to helper
     return await saveAndOpenFile(fileName, bytes);
   }
 
-  static pw.Widget _buildHeaderCell(String text, pw.TextStyle style) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(5),
-      alignment: pw.Alignment.center,
-      child: pw.Text(text, style: style, textAlign: pw.TextAlign.center),
-    );
-  }
-
-  static pw.Widget _buildCell(String text, pw.TextStyle style) {
+  static pw.Widget _buildBulletPoint(
+    String label,
+    String value,
+    pw.TextStyle boldStyle,
+    pw.TextStyle regularStyle,
+  ) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.all(8),
-      child: pw.Center(
-        child: pw.Text(text, style: style, textAlign: pw.TextAlign.center),
+      padding: const pw.EdgeInsets.only(left: 20, bottom: 4),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(top: 4, right: 8),
+            child: pw.Container(
+              width: 3.5,
+              height: 3.5,
+              decoration: const pw.BoxDecoration(
+                color: PdfColors.black,
+                shape: pw.BoxShape.circle,
+              ),
+            ),
+          ),
+          pw.Text(label, style: regularStyle),
+          pw.Expanded(child: pw.Text(value, style: boldStyle)),
+        ],
       ),
     );
   }

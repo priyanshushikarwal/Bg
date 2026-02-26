@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/bg_model.dart';
 import '../../data/repositories/bg_repository.dart';
-import '../../data/datasources/hive_service.dart';
 
 // Repository Provider
 final bgRepositoryProvider = Provider<BgRepository>((ref) {
@@ -183,40 +182,43 @@ final filteredBgsProvider = Provider<AsyncValue<List<BgModel>>>((ref) {
   });
 });
 
-// Dashboard Statistics Providers
-final dashboardStatsProvider = Provider<DashboardStats>((ref) {
+// Dashboard Statistics Providers - now computed from allBgsProvider (Supabase data)
+final dashboardStatsProvider = Provider<AsyncValue<DashboardStats>>((ref) {
+  final allBgsAsync = ref.watch(allBgsProvider);
   final filterState = ref.watch(bgFilterProvider);
-  var allBgs = HiveService.getAllBgs();
 
-  // Apply firm filter to stats
-  if (filterState.firmFilter != null) {
-    allBgs = allBgs
-        .where((bg) => bg.firmName == filterState.firmFilter)
+  return allBgsAsync.whenData((allBgs) {
+    var bgs = allBgs;
+
+    // Apply firm filter to stats
+    if (filterState.firmFilter != null) {
+      bgs = bgs.where((bg) => bg.firmName == filterState.firmFilter).toList();
+    }
+
+    final activeBgs = bgs
+        .where((bg) => bg.status == BgStatus.active && !bg.isExpired)
         .toList();
-  }
+    final expiringBgs = bgs.where((bg) => bg.isExpiringWithinDays(50)).toList();
+    final releasedBgs = bgs
+        .where((bg) => bg.status == BgStatus.released)
+        .toList();
 
-  final activeBgs = allBgs
-      .where((bg) => bg.status == BgStatus.active && !bg.isExpired)
-      .toList();
-  final expiringBgs = allBgs
-      .where((bg) => bg.isExpiringWithinDays(50))
-      .toList();
-  final releasedBgs = allBgs
-      .where((bg) => bg.status == BgStatus.released)
-      .toList();
+    final totalBgAmount = activeBgs.fold<double>(
+      0,
+      (sum, bg) => sum + bg.amount,
+    );
+    final totalFdrAmount = bgs
+        .where((bg) => bg.fdrDetails != null)
+        .fold<double>(0, (sum, bg) => sum + (bg.fdrDetails?.fdrAmount ?? 0));
 
-  final totalBgAmount = activeBgs.fold<double>(0, (sum, bg) => sum + bg.amount);
-  final totalFdrAmount = allBgs
-      .where((bg) => bg.fdrDetails != null)
-      .fold<double>(0, (sum, bg) => sum + (bg.fdrDetails?.fdrAmount ?? 0));
-
-  return DashboardStats(
-    totalBgCount: activeBgs.length,
-    expiringBgCount: expiringBgs.length,
-    releasedBgCount: releasedBgs.length,
-    totalBgAmount: totalBgAmount,
-    totalFdrAmount: totalFdrAmount,
-  );
+    return DashboardStats(
+      totalBgCount: activeBgs.length,
+      expiringBgCount: expiringBgs.length,
+      releasedBgCount: releasedBgs.length,
+      totalBgAmount: totalBgAmount,
+      totalFdrAmount: totalFdrAmount,
+    );
+  });
 });
 
 class DashboardStats {
@@ -235,14 +237,16 @@ class DashboardStats {
   });
 }
 
-// Bank Names Provider
+// Bank Names Provider - derived from fetched data
 final bankNamesProvider = FutureProvider<Set<String>>((ref) async {
-  return HiveService.getAllBankNames();
+  final repository = ref.watch(bgRepositoryProvider);
+  return repository.getAllBankNames();
 });
 
-// Discom Names Provider
+// Discom Names Provider - derived from fetched data
 final discomNamesProvider = FutureProvider<Set<String>>((ref) async {
-  return HiveService.getAllDiscoms();
+  final repository = ref.watch(bgRepositoryProvider);
+  return repository.getAllDiscoms();
 });
 
 // Firm Names Provider - using the predefined list
@@ -253,10 +257,11 @@ final firmNamesProvider = Provider<List<String>>((ref) {
 // Selected BG Provider (for detail view)
 final selectedBgIdProvider = StateProvider<String?>((ref) => null);
 
-final selectedBgProvider = Provider<BgModel?>((ref) {
+final selectedBgProvider = FutureProvider<BgModel?>((ref) async {
   final selectedId = ref.watch(selectedBgIdProvider);
   if (selectedId == null) return null;
-  return HiveService.getBg(selectedId);
+  final repository = ref.watch(bgRepositoryProvider);
+  return repository.getBgById(selectedId);
 });
 
 // Expanded BG Row Provider

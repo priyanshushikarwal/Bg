@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../constants/supabase_constants.dart';
 import '../../data/models/bg_model.dart';
@@ -63,53 +64,80 @@ class SupabaseService {
     final userId = currentUser?.id;
     if (userId == null) throw Exception('User not logged in');
 
-    final data = _bgToMap(bg, userId);
+    debugPrint('=== SUPABASE UPSERT START ===');
+    debugPrint('User ID: $userId');
+    debugPrint('BG ID: ${bg.id}');
+    debugPrint('BG Number: ${bg.bgNumber}');
 
-    await client.from(SupabaseConstants.bgTable).upsert(data);
+    final data = _bgToMap(bg, userId);
+    debugPrint('Data map: $data');
+
+    try {
+      await client.from(SupabaseConstants.bgTable).upsert(data);
+      debugPrint('✅ BG upserted successfully!');
+    } catch (e) {
+      debugPrint('❌ BG upsert FAILED: $e');
+      rethrow;
+    }
 
     // Extensions sync karo
     if (bg.extensionHistory.isNotEmpty) {
-      // Pehle purane extensions delete karo
-      await client
-          .from(SupabaseConstants.extensionsTable)
-          .delete()
-          .eq('bg_id', bg.id);
+      try {
+        // Pehle purane extensions delete karo
+        await client
+            .from(SupabaseConstants.extensionsTable)
+            .delete()
+            .eq('bg_id', bg.id);
 
-      // Naye extensions insert karo
-      final extensions = bg.extensionHistory
-          .map(
-            (ext) => {
-              'id': ext.id,
-              'bg_id': bg.id,
-              'user_id': userId,
-              'extension_date': ext.extensionDate.toIso8601String(),
-              'new_bg_expiry_date': ext.newBgExpiryDate.toIso8601String(),
-              'new_claim_expiry_date': ext.newClaimExpiryDate.toIso8601String(),
-              'remarks': ext.remarks,
-              'document_id': ext.documentId,
-            },
-          )
-          .toList();
+        // Naye extensions insert karo
+        final extensions = bg.extensionHistory
+            .map(
+              (ext) => {
+                'id': ext.id,
+                'bg_id': bg.id,
+                'user_id': userId,
+                'extension_date': ext.extensionDate.toIso8601String(),
+                'new_bg_expiry_date': ext.newBgExpiryDate.toIso8601String(),
+                'new_claim_expiry_date': ext.newClaimExpiryDate
+                    .toIso8601String(),
+                'remarks': ext.remarks,
+                'document_id': ext.documentId,
+              },
+            )
+            .toList();
 
-      if (extensions.isNotEmpty) {
-        await client.from(SupabaseConstants.extensionsTable).upsert(extensions);
+        if (extensions.isNotEmpty) {
+          await client
+              .from(SupabaseConstants.extensionsTable)
+              .upsert(extensions);
+          debugPrint('✅ ${extensions.length} extensions synced!');
+        }
+      } catch (e) {
+        debugPrint('❌ Extensions sync FAILED: $e');
       }
     }
 
     // FDR details sync karo
     if (bg.fdrDetails != null) {
-      await client.from(SupabaseConstants.fdrTable).upsert({
-        'id': bg.fdrDetails!.id,
-        'bg_id': bg.id,
-        'user_id': userId,
-        'fdr_number': bg.fdrDetails!.fdrNumber,
-        'fdr_date': bg.fdrDetails!.fdrDate.toIso8601String(),
-        'fdr_amount': bg.fdrDetails!.fdrAmount,
-        'roi': bg.fdrDetails!.roi,
-        'bank_name': bg.fdrDetails!.bankName,
-        'maturity_date': bg.fdrDetails!.maturityDate?.toIso8601String(),
-      });
+      try {
+        await client.from(SupabaseConstants.fdrTable).upsert({
+          'id': bg.fdrDetails!.id,
+          'bg_id': bg.id,
+          'user_id': userId,
+          'fdr_number': bg.fdrDetails!.fdrNumber,
+          'fdr_date': bg.fdrDetails!.fdrDate.toIso8601String(),
+          'fdr_amount': bg.fdrDetails!.fdrAmount,
+          'roi': bg.fdrDetails!.roi,
+          'bank_name': bg.fdrDetails!.bankName,
+          'maturity_date': bg.fdrDetails!.maturityDate?.toIso8601String(),
+        });
+        debugPrint('✅ FDR synced!');
+      } catch (e) {
+        debugPrint('❌ FDR sync FAILED: $e');
+      }
     }
+
+    debugPrint('=== SUPABASE UPSERT END ===');
   }
 
   /// Supabase se saare BGs fetch karo (current user ke)
@@ -117,12 +145,17 @@ class SupabaseService {
     final userId = currentUser?.id;
     if (userId == null) throw Exception('User not logged in');
 
+    debugPrint('=== SUPABASE FETCH START ===');
+    debugPrint('Fetching BGs for user: $userId');
+
     // BGs fetch karo
     final bgsData = await client
         .from(SupabaseConstants.bgTable)
         .select()
         .eq('user_id', userId)
         .order('created_at', ascending: false);
+
+    debugPrint('Fetched ${bgsData.length} BGs from Supabase');
 
     if (bgsData.isEmpty) return [];
 
