@@ -8,10 +8,58 @@ class SupabaseService {
 
   // ===== INITIALIZATION =====
   static Future<void> init() async {
+    // Ensure the URL does NOT have a trailing slash
+    final cleanUrl = SupabaseConstants.supabaseUrl.endsWith('/')
+        ? SupabaseConstants.supabaseUrl.substring(
+            0,
+            SupabaseConstants.supabaseUrl.length - 1,
+          )
+        : SupabaseConstants.supabaseUrl;
+
     await Supabase.initialize(
-      url: SupabaseConstants.supabaseUrl,
+      url: cleanUrl,
       anonKey: SupabaseConstants.supabaseAnonKey,
+      authOptions: const FlutterAuthClientOptions(
+        authFlowType: AuthFlowType.pkce,
+      ),
+      realtimeClientOptions: const RealtimeClientOptions(eventsPerSecond: 10),
+      headers: const {'Cache-Control': 'no-cache'},
     );
+  }
+
+  // ===== HELPER: EXPONENTIAL BACKOFF FOR FLUTTER WEB / CLOUDFLARE 525 =====
+  static Future<T> _withRetry<T>(Future<T> Function() operation) async {
+    int attempts = 0;
+    const maxAttempts = 3;
+
+    while (attempts < maxAttempts) {
+      try {
+        return await operation();
+      } catch (e) {
+        attempts++;
+        final errorString = e.toString().toLowerCase();
+
+        // If it's a network, fetch, or generic CORS/SSL failure
+        if (errorString.contains('failed to fetch') ||
+            errorString.contains('xmlhttprequest') ||
+            errorString.contains('cors') ||
+            errorString.contains('525') ||
+            errorString.contains('handshake') ||
+            errorString.contains('socket') ||
+            errorString.contains('timeout')) {
+          if (attempts >= maxAttempts) rethrow;
+
+          // Exponential backoff: 1s, 2s, 4s...
+          await Future.delayed(Duration(seconds: 1 << (attempts - 1)));
+          debugPrint(
+            '🔄 Retrying Supabase query (Attempt $attempts) due to Network/CORS drop...',
+          );
+        } else {
+          rethrow; // Legitimate error (e.g. RLS validation)
+        }
+      }
+    }
+    throw Exception('Max retries reached');
   }
 
   // ===== AUTH METHODS =====
@@ -28,9 +76,8 @@ class SupabaseService {
     required String email,
     required String password,
   }) async {
-    return await client.auth.signInWithPassword(
-      email: email,
-      password: password,
+    return await _withRetry(
+      () => client.auth.signInWithPassword(email: email, password: password),
     );
   }
 
@@ -40,21 +87,23 @@ class SupabaseService {
     required String password,
     String? fullName,
   }) async {
-    return await client.auth.signUp(
-      email: email,
-      password: password,
-      data: fullName != null ? {'full_name': fullName} : null,
+    return await _withRetry(
+      () => client.auth.signUp(
+        email: email,
+        password: password,
+        data: fullName != null ? {'full_name': fullName} : null,
+      ),
     );
   }
 
   /// Sign out
   static Future<void> signOut() async {
-    await client.auth.signOut();
+    await _withRetry(() => client.auth.signOut());
   }
 
   /// Password reset email
   static Future<void> resetPassword(String email) async {
-    await client.auth.resetPasswordForEmail(email);
+    await _withRetry(() => client.auth.resetPasswordForEmail(email));
   }
 
   // ===== BG DATABASE METHODS =====
@@ -73,7 +122,9 @@ class SupabaseService {
     debugPrint('Data map: $data');
 
     try {
-      await client.from(SupabaseConstants.bgTable).upsert(data);
+      await _withRetry(
+        () => client.from(SupabaseConstants.bgTable).upsert(data),
+      );
       debugPrint('✅ BG upserted successfully!');
     } catch (e) {
       debugPrint('❌ BG upsert FAILED: $e');
@@ -84,10 +135,12 @@ class SupabaseService {
     if (bg.extensionHistory.isNotEmpty) {
       try {
         // Pehle purane extensions delete karo
-        await client
-            .from(SupabaseConstants.extensionsTable)
-            .delete()
-            .eq('bg_id', bg.id);
+        await _withRetry(
+          () => client
+              .from(SupabaseConstants.extensionsTable)
+              .delete()
+              .eq('bg_id', bg.id),
+        );
 
         // Naye extensions insert karo
         final extensions = bg.extensionHistory
@@ -107,9 +160,11 @@ class SupabaseService {
             .toList();
 
         if (extensions.isNotEmpty) {
-          await client
-              .from(SupabaseConstants.extensionsTable)
-              .upsert(extensions);
+          await _withRetry(
+            () => client
+                .from(SupabaseConstants.extensionsTable)
+                .upsert(extensions),
+          );
           debugPrint('✅ ${extensions.length} extensions synced!');
         }
       } catch (e) {
@@ -120,17 +175,19 @@ class SupabaseService {
     // FDR details sync karo
     if (bg.fdrDetails != null) {
       try {
-        await client.from(SupabaseConstants.fdrTable).upsert({
-          'id': bg.fdrDetails!.id,
-          'bg_id': bg.id,
-          'user_id': userId,
-          'fdr_number': bg.fdrDetails!.fdrNumber,
-          'fdr_date': bg.fdrDetails!.fdrDate.toIso8601String(),
-          'fdr_amount': bg.fdrDetails!.fdrAmount,
-          'roi': bg.fdrDetails!.roi,
-          'bank_name': bg.fdrDetails!.bankName,
-          'maturity_date': bg.fdrDetails!.maturityDate?.toIso8601String(),
-        });
+        await _withRetry(
+          () => client.from(SupabaseConstants.fdrTable).upsert({
+            'id': bg.fdrDetails!.id,
+            'bg_id': bg.id,
+            'user_id': userId,
+            'fdr_number': bg.fdrDetails!.fdrNumber,
+            'fdr_date': bg.fdrDetails!.fdrDate.toIso8601String(),
+            'fdr_amount': bg.fdrDetails!.fdrAmount,
+            'roi': bg.fdrDetails!.roi,
+            'bank_name': bg.fdrDetails!.bankName,
+            'maturity_date': bg.fdrDetails!.maturityDate?.toIso8601String(),
+          }),
+        );
         debugPrint('✅ FDR synced!');
       } catch (e) {
         debugPrint('❌ FDR sync FAILED: $e');
@@ -149,11 +206,13 @@ class SupabaseService {
     debugPrint('Fetching BGs for user: $userId');
 
     // BGs fetch karo
-    final bgsData = await client
-        .from(SupabaseConstants.bgTable)
-        .select()
-        .eq('user_id', userId)
-        .order('created_at', ascending: false);
+    final bgsData = await _withRetry(
+      () => client
+          .from(SupabaseConstants.bgTable)
+          .select()
+          .eq('user_id', userId)
+          .order('created_at', ascending: false),
+    );
 
     debugPrint('Fetched ${bgsData.length} BGs from Supabase');
 
@@ -162,16 +221,20 @@ class SupabaseService {
     final bgIds = bgsData.map((b) => b['id'] as String).toList();
 
     // Extensions fetch karo
-    final extensionsData = await client
-        .from(SupabaseConstants.extensionsTable)
-        .select()
-        .inFilter('bg_id', bgIds);
+    final extensionsData = await _withRetry(
+      () => client
+          .from(SupabaseConstants.extensionsTable)
+          .select()
+          .inFilter('bg_id', bgIds),
+    );
 
     // FDR details fetch karo
-    final fdrData = await client
-        .from(SupabaseConstants.fdrTable)
-        .select()
-        .inFilter('bg_id', bgIds);
+    final fdrData = await _withRetry(
+      () => client
+          .from(SupabaseConstants.fdrTable)
+          .select()
+          .inFilter('bg_id', bgIds),
+    );
 
     // Model mein convert karo
     return bgsData.map((bgMap) {
@@ -236,20 +299,26 @@ class SupabaseService {
     if (userId == null) throw Exception('User not logged in');
 
     // Extensions delete
-    await client
-        .from(SupabaseConstants.extensionsTable)
-        .delete()
-        .eq('bg_id', bgId);
+    await _withRetry(
+      () => client
+          .from(SupabaseConstants.extensionsTable)
+          .delete()
+          .eq('bg_id', bgId),
+    );
 
     // FDR delete
-    await client.from(SupabaseConstants.fdrTable).delete().eq('bg_id', bgId);
+    await _withRetry(
+      () => client.from(SupabaseConstants.fdrTable).delete().eq('bg_id', bgId),
+    );
 
     // BG delete
-    await client
-        .from(SupabaseConstants.bgTable)
-        .delete()
-        .eq('id', bgId)
-        .eq('user_id', userId);
+    await _withRetry(
+      () => client
+          .from(SupabaseConstants.bgTable)
+          .delete()
+          .eq('id', bgId)
+          .eq('user_id', userId),
+    );
   }
 
   // ===== HELPER METHODS =====
