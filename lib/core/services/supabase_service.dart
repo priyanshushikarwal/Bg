@@ -23,7 +23,6 @@ class SupabaseService {
         authFlowType: AuthFlowType.pkce,
       ),
       realtimeClientOptions: const RealtimeClientOptions(eventsPerSecond: 10),
-      headers: const {'Cache-Control': 'no-cache'},
     );
   }
 
