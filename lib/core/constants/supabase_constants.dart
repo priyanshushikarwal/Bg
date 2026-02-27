@@ -8,11 +8,11 @@
 class SupabaseConstants {
   // 🔴 IMPORTANT: Apna Supabase URL aur Anon Key yahan daalo
   // Example: 'https://xyzcompany.supabase.co'
-  static const String supabaseUrl = 'https://qjotmdeebfwwcubapogd.supabase.co';
+  static const String supabaseUrl = 'https://qsnlvvzdzuzkqgisnqre.supabase.co';
 
   // Example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
   static const String supabaseAnonKey =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqb3RtZGVlYmZ3d2N1YmFwb2dkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNDQzMjksImV4cCI6MjA4NzYyMDMyOX0.UGgYyQyVwIzxYtFRW_mfc8kBW9Smy9wGJkPevMxMuAE';
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzbmx2dnpkenV6a3FnaXNucXJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxMzY0NzMsImV4cCI6MjA4NzcxMjQ3M30.5GEAVrz-TuYROkLZfr8FPcZ_u0AxnJnPsR5Ah0EdZzM';
 
   // Table names
   static const String bgTable = 'bank_guarantees';
