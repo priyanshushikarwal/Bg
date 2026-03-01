@@ -61,3 +61,7 @@ firebase.json
 supabase_setup.sql
 *.zip
 build/
+
+# Installer
+installer_output/
+installer/vcredist/

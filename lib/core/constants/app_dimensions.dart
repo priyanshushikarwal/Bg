@@ -1,7 +1,7 @@
 class AppDimensions {
   AppDimensions._();
 
-  // Spacing
+ 
   static const double spaceXxs = 4.0;
   static const double spaceXs = 8.0;
   static const double spaceSm = 12.0;
@@ -11,7 +11,7 @@ class AppDimensions {
   static const double spaceXxl = 48.0;
   static const double spaceXxxl = 64.0;
 
-  // Border Radius
+  
   static const double radiusXs = 4.0;
   static const double radiusSm = 8.0;
   static const double radiusMd = 12.0;
@@ -20,18 +20,18 @@ class AppDimensions {
   static const double radiusXxl = 24.0;
   static const double radiusFull = 999.0;
 
-  // Card Dimensions
+
   static const double cardRadius = 20.0;
   static const double cardPadding = 24.0;
   static const double cardElevation = 0.0;
 
-  // Sidebar
+  
   static const double sidebarWidth = 260.0;
   static const double sidebarCollapsedWidth = 80.0;
   static const double sidebarItemHeight = 52.0;
   static const double sidebarIconSize = 22.0;
 
-  // App Bar
+  
   static const double appBarHeight = 70.0;
   static const double appBarPadding = 24.0;
 

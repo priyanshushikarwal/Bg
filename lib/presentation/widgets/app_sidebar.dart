@@ -156,6 +156,43 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                         ref.read(currentScreenProvider.notifier).state =
                             AppScreen.reports,
                   ),
+
+                  const Spacer(),
+
+                  // Settings
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12, bottom: 8, top: 4),
+                    child: Text(
+                      'SYSTEM',
+                      style: TextStyle(
+                        color: AppColors.textOnDarkMuted.withValues(alpha: 0.4),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
+                  _SidebarItem(
+                    icon: Icons.settings_rounded,
+                    label: AppStrings.settings,
+                    isSelected: currentScreen == AppScreen.settings,
+                    onTap: () =>
+                        ref.read(currentScreenProvider.notifier).state =
+                            AppScreen.settings,
+                  ),
+
+                  // Version display
+                  Padding(
+                    padding: const EdgeInsets.only(left: 24, top: 8, bottom: 4),
+                    child: Text(
+                      'Version ${AppStrings.appVersion}',
+                      style: TextStyle(
+                        color: AppColors.textOnDarkMuted.withValues(alpha: 0.35),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

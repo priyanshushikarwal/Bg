@@ -183,13 +183,57 @@ class SupabaseService {
             'fdr_date': bg.fdrDetails!.fdrDate.toIso8601String(),
             'fdr_amount': bg.fdrDetails!.fdrAmount,
             'roi': bg.fdrDetails!.roi,
-            'bank_name': bg.fdrDetails!.bankName,
+            'bank_name': bg.fdrDetails!.bankName ?? '',
             'maturity_date': bg.fdrDetails!.maturityDate?.toIso8601String(),
           }),
         );
         debugPrint('✅ FDR synced!');
       } catch (e) {
         debugPrint('❌ FDR sync FAILED: $e');
+        rethrow;
+      }
+    }
+
+    // Documents sync karo
+    if (bg.documents.isNotEmpty) {
+      try {
+        // Pehle purane documents delete karo
+        await _withRetry(
+          () => client
+              .from(SupabaseConstants.documentsTable)
+              .delete()
+              .eq('bg_id', bg.id),
+        );
+
+        // Naye documents insert karo
+        final docs = bg.documents
+            .map(
+              (doc) => {
+                'id': doc.id,
+                'bg_id': bg.id,
+                'user_id': userId,
+                'type': doc.type.index,
+                'version': doc.version,
+                'upload_date': doc.uploadDate.toIso8601String(),
+                'file_path': doc.filePath,
+                'file_name': doc.fileName,
+                'description': doc.description,
+                'file_size_bytes': doc.fileSizeBytes,
+              },
+            )
+            .toList();
+
+        if (docs.isNotEmpty) {
+          await _withRetry(
+            () => client
+                .from(SupabaseConstants.documentsTable)
+                .upsert(docs),
+          );
+          debugPrint('✅ ${docs.length} documents synced!');
+        }
+      } catch (e) {
+        debugPrint('❌ Documents sync FAILED: $e');
+        rethrow;
       }
     }
 
@@ -235,6 +279,14 @@ class SupabaseService {
           .inFilter('bg_id', bgIds),
     );
 
+    // Documents fetch karo
+    final docsData = await _withRetry(
+      () => client
+          .from(SupabaseConstants.documentsTable)
+          .select()
+          .inFilter('bg_id', bgIds),
+    );
+
     // Model mein convert karo
     return bgsData.map((bgMap) {
       final bgId = bgMap['id'] as String;
@@ -271,6 +323,23 @@ class SupabaseService {
         );
       }
 
+      // Documents
+      final bgDocs = docsData
+          .where((d) => d['bg_id'] == bgId)
+          .map(
+            (d) => DocumentModel(
+              id: d['id'],
+              type: DocumentType.values[d['type'] as int],
+              version: d['version'] ?? 1,
+              uploadDate: DateTime.parse(d['upload_date']),
+              filePath: d['file_path'] ?? '',
+              fileName: d['file_name'] ?? 'document',
+              description: d['description'],
+              fileSizeBytes: d['file_size_bytes'],
+            ),
+          )
+          .toList();
+
       return BgModel(
         id: bgId,
         bgNumber: bgMap['bg_number'],
@@ -283,7 +352,7 @@ class SupabaseService {
         tenderNumber: bgMap['tender_number'],
         status: BgStatus.values[bgMap['status'] as int],
         extensionHistory: bgExtensions,
-        documents: [],
+        documents: bgDocs,
         fdrDetails: fdrModel,
         createdAt: DateTime.parse(bgMap['created_at']),
         updatedAt: DateTime.parse(bgMap['updated_at']),
@@ -296,6 +365,14 @@ class SupabaseService {
   static Future<void> deleteBg(String bgId) async {
     final userId = currentUser?.id;
     if (userId == null) throw Exception('User not logged in');
+
+    // Documents delete
+    await _withRetry(
+      () => client
+          .from(SupabaseConstants.documentsTable)
+          .delete()
+          .eq('bg_id', bgId),
+    );
 
     // Extensions delete
     await _withRetry(

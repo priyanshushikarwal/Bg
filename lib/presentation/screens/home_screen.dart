@@ -9,6 +9,7 @@ import 'bg_management/bg_management_screen.dart';
 import 'fdr_management/fdr_management_screen.dart';
 import 'documents/documents_screen.dart';
 import 'reports/reports_screen.dart';
+import 'settings/settings_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -53,6 +54,8 @@ class HomeScreen extends ConsumerWidget {
         return 'Documents';
       case AppScreen.reports:
         return 'Reports';
+      case AppScreen.settings:
+        return 'Settings';
     }
   }
 
@@ -68,6 +71,8 @@ class HomeScreen extends ConsumerWidget {
         return const DocumentsScreen();
       case AppScreen.reports:
         return const ReportsScreen();
+      case AppScreen.settings:
+        return const SettingsScreen();
     }
   }
 }

@@ -2,7 +2,7 @@ name: bg_manager
 description: "Bank Guarantee (BG) Management System - A premium fintech desktop application"
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.2+2
 
 environment:
   sdk: ^3.10.7
@@ -31,6 +31,9 @@ dependencies:
   # PDF Generation
   pdf: ^3.11.2
   
+  # HTTP
+  http: ^1.2.2
+
   # Icons
   cupertino_icons: ^1.0.8
   supabase_flutter: ^2.12.0

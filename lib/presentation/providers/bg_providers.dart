@@ -295,7 +295,7 @@ class ExpandedBgIdsNotifier extends StateNotifier<Set<String>> {
 }
 
 // Navigation Provider
-enum AppScreen { dashboard, bgManagement, fdrManagement, documents, reports }
+enum AppScreen { dashboard, bgManagement, fdrManagement, documents, reports, settings }
 
 final currentScreenProvider = StateProvider<AppScreen>(
   (ref) => AppScreen.dashboard,
