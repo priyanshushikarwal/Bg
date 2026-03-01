@@ -280,12 +280,18 @@ class SupabaseService {
     );
 
     // Documents fetch karo
-    final docsData = await _withRetry(
-      () => client
-          .from(SupabaseConstants.documentsTable)
-          .select()
-          .inFilter('bg_id', bgIds),
-    );
+    List<Map<String, dynamic>> docsData = [];
+    try {
+      docsData = await _withRetry(
+        () => client
+            .from(SupabaseConstants.documentsTable)
+            .select()
+            .inFilter('bg_id', bgIds),
+      );
+      debugPrint('Fetched ${docsData.length} documents from Supabase');
+    } catch (e) {
+      debugPrint('⚠️ Documents fetch failed (table may not exist): $e');
+    }
 
     // Model mein convert karo
     return bgsData.map((bgMap) {
@@ -324,21 +330,24 @@ class SupabaseService {
       }
 
       // Documents
-      final bgDocs = docsData
-          .where((d) => d['bg_id'] == bgId)
-          .map(
-            (d) => DocumentModel(
-              id: d['id'],
-              type: DocumentType.values[d['type'] as int],
-              version: d['version'] ?? 1,
-              uploadDate: DateTime.parse(d['upload_date']),
-              filePath: d['file_path'] ?? '',
-              fileName: d['file_name'] ?? 'document',
-              description: d['description'],
-              fileSizeBytes: d['file_size_bytes'],
-            ),
-          )
-          .toList();
+      final bgDocsRaw = docsData.where((d) => d['bg_id'] == bgId).toList();
+      final List<DocumentModel> bgDocs = [];
+      for (final d in bgDocsRaw) {
+        try {
+          bgDocs.add(DocumentModel(
+            id: d['id'],
+            type: DocumentType.values[d['type'] as int],
+            version: d['version'] ?? 1,
+            uploadDate: DateTime.parse(d['upload_date']),
+            filePath: d['file_path'] ?? '',
+            fileName: d['file_name'] ?? 'document',
+            description: d['description'],
+            fileSizeBytes: d['file_size_bytes'],
+          ));
+        } catch (e) {
+          debugPrint('⚠️ Skipping bad document record: $e');
+        }
+      }
 
       return BgModel(
         id: bgId,

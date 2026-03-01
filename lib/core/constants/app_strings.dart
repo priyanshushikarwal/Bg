@@ -4,7 +4,7 @@ class AppStrings {
  
   static const String appName = 'BG Manager';
   static const String appFullName = 'Bank Guarantee Management System';
-  static const String appVersion = '1.0.2';
+  static const String appVersion = '1.0.4';
 
   static const String dashboard = 'Dashboard';
   static const String bgManagement = 'BG Management';

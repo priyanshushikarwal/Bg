@@ -60,10 +60,14 @@ class UpdaterService {
     final bool needsAdmin = appDir.toLowerCase().contains('program files');
 
     if (needsAdmin) {
-      // Launch with UAC elevation
+      // Launch with UAC elevation via cmd to ensure process independence
       await Process.start(
-        'powershell',
+        'cmd',
         [
+          '/c',
+          'start',
+          '/b',
+          'powershell',
           '-Command',
           'Start-Process',
           'powershell',
@@ -75,10 +79,15 @@ class UpdaterService {
         mode: ProcessStartMode.detached,
       );
     } else {
-      // Launch normally — no admin needed
+      // Launch via cmd /c start to create a fully independent process chain
+      // so exit(0) cannot kill the updater script
       await Process.start(
-        'powershell',
+        'cmd',
         [
+          '/c',
+          'start',
+          '/b',
+          'powershell',
           '-ExecutionPolicy',
           'Bypass',
           '-WindowStyle',
@@ -89,6 +98,9 @@ class UpdaterService {
         mode: ProcessStartMode.detached,
       );
     }
+
+    // Give the detached process time to fully initialize before exiting
+    await Future.delayed(const Duration(seconds: 3));
 
     // Exit the current app so the script can replace files
     exit(0);
@@ -127,6 +139,9 @@ function Log(\$message) {
 
 try {
     Log "=== Update process started ==="
+
+    # Give the Dart app a moment to fully exit
+    Start-Sleep -Seconds 3
 
     \$processName = '$escapedProcessName'
     \$currentExe = '$escapedExe'
