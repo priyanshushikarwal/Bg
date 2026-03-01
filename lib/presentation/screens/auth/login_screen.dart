@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -93,9 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         child: Row(
           children: [
-            // Left panel - branding
             Expanded(flex: 5, child: _buildBrandingPanel()),
-            // Right panel - form
             Expanded(flex: 4, child: _buildFormPanel()),
           ],
         ),
@@ -110,7 +108,6 @@ class _LoginScreenState extends State<LoginScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Logo
           Container(
                 width: 72,
                 height: 72,
@@ -167,12 +164,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
           const SizedBox(height: 60),
 
-          // Features list
           ..._buildFeatureItems(),
 
           const Spacer(),
 
-          // Bottom tagline
           Text(
             'Secure • Cloud • Real-time',
             style: GoogleFonts.inter(
@@ -242,7 +237,6 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
                   Text(
                     _isLogin ? 'Welcome back' : 'Create account',
                     style: GoogleFonts.inter(
@@ -267,7 +261,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 40),
 
-                  // Error message
                   if (_errorMessage != null)
                     Container(
                       padding: const EdgeInsets.all(14),
@@ -300,7 +293,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ).animate().fadeIn(duration: 300.ms).shakeX(),
 
-                  // Name field (signup only)
                   if (!_isLogin) ...[
                     _buildLabel('Full Name'),
                     const SizedBox(height: 8),
@@ -313,7 +305,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 20),
                   ],
 
-                  // Email field
                   _buildLabel('Email Address'),
                   const SizedBox(height: 8),
                   _buildTextField(
@@ -330,7 +321,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 20),
 
-                  // Password field
                   _buildLabel('Password'),
                   const SizedBox(height: 8),
                   _buildTextField(
@@ -356,7 +346,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
 
-                  // Forgot password (login only)
                   if (_isLogin)
                     Align(
                       alignment: Alignment.centerRight,
@@ -375,7 +364,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 32),
 
-                  // Submit button
                   SizedBox(
                         width: double.infinity,
                         height: 52,
@@ -414,7 +402,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 28),
 
-                  // Toggle login/signup
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

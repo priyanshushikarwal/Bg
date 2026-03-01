@@ -1,4 +1,4 @@
-import 'package:pdf/pdf.dart';
+﻿import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
 import '../../data/models/bg_model.dart';
@@ -18,7 +18,6 @@ class BgReportService {
   ) async {
     final pdf = pw.Document();
 
-    // Sort BGs by expiry date (ascending)
     bgs.sort((a, b) => a.currentExpiryDate.compareTo(b.currentExpiryDate));
 
     pdf.addPage(
@@ -27,7 +26,6 @@ class BgReportService {
         margin: const pw.EdgeInsets.all(30),
         build: (pw.Context context) {
           return [
-            // Header
             pw.Header(
               level: 0,
               child: pw.Row(
@@ -70,11 +68,9 @@ class BgReportService {
             ),
             pw.SizedBox(height: 20),
 
-            // Table
             pw.Table(
               border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
               children: [
-                // Table Header
                 pw.TableRow(
                   decoration: const pw.BoxDecoration(color: PdfColors.grey200),
                   children: [
@@ -89,7 +85,6 @@ class BgReportService {
                     _buildHeaderCell('Days Left'),
                   ],
                 ),
-                // Data Rows
                 ...bgs.asMap().entries.map((entry) {
                   final index = entry.key;
                   final bg = entry.value;

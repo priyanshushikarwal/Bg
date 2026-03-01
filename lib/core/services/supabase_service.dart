@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../constants/supabase_constants.dart';
 import '../../data/models/bg_model.dart';
@@ -6,9 +6,7 @@ import '../../data/models/bg_model.dart';
 class SupabaseService {
   static SupabaseClient get client => Supabase.instance.client;
 
-  // ===== INITIALIZATION =====
   static Future<void> init() async {
-    // Ensure the URL does NOT have a trailing slash
     final cleanUrl = SupabaseConstants.supabaseUrl.endsWith('/')
         ? SupabaseConstants.supabaseUrl.substring(
             0,
@@ -26,7 +24,6 @@ class SupabaseService {
     );
   }
 
-  // ===== HELPER: EXPONENTIAL BACKOFF FOR FLUTTER WEB / CLOUDFLARE 525 =====
   static Future<T> _withRetry<T>(Future<T> Function() operation) async {
     int attempts = 0;
     const maxAttempts = 3;
@@ -38,7 +35,6 @@ class SupabaseService {
         attempts++;
         final errorString = e.toString().toLowerCase();
 
-        // If it's a network, fetch, or generic CORS/SSL failure
         if (errorString.contains('failed to fetch') ||
             errorString.contains('xmlhttprequest') ||
             errorString.contains('cors') ||
@@ -48,20 +44,18 @@ class SupabaseService {
             errorString.contains('timeout')) {
           if (attempts >= maxAttempts) rethrow;
 
-          // Exponential backoff: 1s, 2s, 4s...
           await Future.delayed(Duration(seconds: 1 << (attempts - 1)));
           debugPrint(
             '🔄 Retrying Supabase query (Attempt $attempts) due to Network/CORS drop...',
           );
         } else {
-          rethrow; // Legitimate error (e.g. RLS validation)
+          rethrow;
         }
       }
     }
     throw Exception('Max retries reached');
   }
 
-  // ===== AUTH METHODS =====
 
   static User? get currentUser => client.auth.currentUser;
 
@@ -70,7 +64,6 @@ class SupabaseService {
   static Stream<AuthState> get authStateChanges =>
       client.auth.onAuthStateChange;
 
-  /// Email/Password se sign in
   static Future<AuthResponse> signIn({
     required String email,
     required String password,
@@ -80,7 +73,6 @@ class SupabaseService {
     );
   }
 
-  /// Naya account banao
   static Future<AuthResponse> signUp({
     required String email,
     required String password,
@@ -95,19 +87,15 @@ class SupabaseService {
     );
   }
 
-  /// Sign out
   static Future<void> signOut() async {
     await _withRetry(() => client.auth.signOut());
   }
 
-  /// Password reset email
   static Future<void> resetPassword(String email) async {
     await _withRetry(() => client.auth.resetPasswordForEmail(email));
   }
 
-  // ===== BG DATABASE METHODS =====
 
-  /// Supabase me saara BG data daalo (user ke liye)
   static Future<void> upsertBg(BgModel bg) async {
     final userId = currentUser?.id;
     if (userId == null) throw Exception('User not logged in');
@@ -130,10 +118,8 @@ class SupabaseService {
       rethrow;
     }
 
-    // Extensions sync karo
     if (bg.extensionHistory.isNotEmpty) {
       try {
-        // Pehle purane extensions delete karo
         await _withRetry(
           () => client
               .from(SupabaseConstants.extensionsTable)
@@ -141,7 +127,6 @@ class SupabaseService {
               .eq('bg_id', bg.id),
         );
 
-        // Naye extensions insert karo
         final extensions = bg.extensionHistory
             .map(
               (ext) => {
@@ -171,7 +156,6 @@ class SupabaseService {
       }
     }
 
-    // FDR details sync karo
     if (bg.fdrDetails != null) {
       try {
         await _withRetry(
@@ -194,10 +178,8 @@ class SupabaseService {
       }
     }
 
-    // Documents sync karo
     if (bg.documents.isNotEmpty) {
       try {
-        // Pehle purane documents delete karo
         await _withRetry(
           () => client
               .from(SupabaseConstants.documentsTable)
@@ -205,7 +187,6 @@ class SupabaseService {
               .eq('bg_id', bg.id),
         );
 
-        // Naye documents insert karo
         final docs = bg.documents
             .map(
               (doc) => {
@@ -240,7 +221,6 @@ class SupabaseService {
     debugPrint('=== SUPABASE UPSERT END ===');
   }
 
-  /// Supabase se saare BGs fetch karo (current user ke)
   static Future<List<BgModel>> fetchAllBgs() async {
     final userId = currentUser?.id;
     if (userId == null) throw Exception('User not logged in');
@@ -248,7 +228,6 @@ class SupabaseService {
     debugPrint('=== SUPABASE FETCH START ===');
     debugPrint('Fetching BGs for user: $userId');
 
-    // BGs fetch karo
     final bgsData = await _withRetry(
       () => client
           .from(SupabaseConstants.bgTable)
@@ -263,7 +242,6 @@ class SupabaseService {
 
     final bgIds = bgsData.map((b) => b['id'] as String).toList();
 
-    // Extensions fetch karo
     final extensionsData = await _withRetry(
       () => client
           .from(SupabaseConstants.extensionsTable)
@@ -271,7 +249,6 @@ class SupabaseService {
           .inFilter('bg_id', bgIds),
     );
 
-    // FDR details fetch karo
     final fdrData = await _withRetry(
       () => client
           .from(SupabaseConstants.fdrTable)
@@ -279,7 +256,6 @@ class SupabaseService {
           .inFilter('bg_id', bgIds),
     );
 
-    // Documents fetch karo
     List<Map<String, dynamic>> docsData = [];
     try {
       docsData = await _withRetry(
@@ -293,11 +269,9 @@ class SupabaseService {
       debugPrint('⚠️ Documents fetch failed (table may not exist): $e');
     }
 
-    // Model mein convert karo
     return bgsData.map((bgMap) {
       final bgId = bgMap['id'] as String;
 
-      // Extensions
       final bgExtensions = extensionsData
           .where((e) => e['bg_id'] == bgId)
           .map(
@@ -312,7 +286,6 @@ class SupabaseService {
           )
           .toList();
 
-      // FDR
       final fdrMap = fdrData.where((f) => f['bg_id'] == bgId).firstOrNull;
       FdrModel? fdrModel;
       if (fdrMap != null) {
@@ -329,7 +302,6 @@ class SupabaseService {
         );
       }
 
-      // Documents
       final bgDocsRaw = docsData.where((d) => d['bg_id'] == bgId).toList();
       final List<DocumentModel> bgDocs = [];
       for (final d in bgDocsRaw) {
@@ -370,12 +342,10 @@ class SupabaseService {
     }).toList();
   }
 
-  /// Supabase se BG delete karo
   static Future<void> deleteBg(String bgId) async {
     final userId = currentUser?.id;
     if (userId == null) throw Exception('User not logged in');
 
-    // Documents delete
     await _withRetry(
       () => client
           .from(SupabaseConstants.documentsTable)
@@ -383,7 +353,6 @@ class SupabaseService {
           .eq('bg_id', bgId),
     );
 
-    // Extensions delete
     await _withRetry(
       () => client
           .from(SupabaseConstants.extensionsTable)
@@ -391,12 +360,10 @@ class SupabaseService {
           .eq('bg_id', bgId),
     );
 
-    // FDR delete
     await _withRetry(
       () => client.from(SupabaseConstants.fdrTable).delete().eq('bg_id', bgId),
     );
 
-    // BG delete
     await _withRetry(
       () => client
           .from(SupabaseConstants.bgTable)
@@ -406,7 +373,6 @@ class SupabaseService {
     );
   }
 
-  // ===== HELPER METHODS =====
 
   static Map<String, dynamic> _bgToMap(BgModel bg, String userId) {
     return {

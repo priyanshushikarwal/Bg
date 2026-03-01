@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
@@ -28,7 +28,6 @@ class DashboardScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -58,14 +57,12 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-                // Add BG Button
                 _AddButton(onPressed: () => _showAddBgDialog(context, ref)),
               ],
             ),
 
             const SizedBox(height: 24),
 
-            // Stats Cards
             statsAsync.when(
               data: (stats) => _buildStatsCards(context, ref, stats),
               loading: () => const SizedBox(
@@ -80,12 +77,10 @@ class DashboardScreen extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // Filters
             _buildFilters(ref, filterState),
 
             const SizedBox(height: 20),
 
-            // BG List Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -143,7 +138,6 @@ class DashboardScreen extends ConsumerWidget {
 
             const SizedBox(height: 12),
 
-            // BG List
             Expanded(
               child: filteredBgsAsync.when(
                 data: (bgs) {
@@ -341,7 +335,6 @@ class DashboardScreen extends ConsumerWidget {
           Container(height: 24, width: 1, color: AppColors.border),
           const SizedBox(width: 16),
 
-          // Bank Filter Dropdown
           bankNamesAsync.when(
             data: (banks) => _FilterDropdown(
               label: filterState.bankFilter ?? 'Bank',
@@ -359,7 +352,6 @@ class DashboardScreen extends ConsumerWidget {
 
           const SizedBox(width: 8),
 
-          // Discom Filter Dropdown
           discomNamesAsync.when(
             data: (discoms) => _FilterDropdown(
               label: filterState.discomFilter ?? 'Discom',
@@ -459,7 +451,6 @@ class DashboardScreen extends ConsumerWidget {
   }
 }
 
-// Minimal Stat Card - White background with gradient accent
 class _StatCard extends StatefulWidget {
   final String title;
   final String value;
@@ -513,7 +504,6 @@ class _StatCardState extends State<_StatCard> {
               : Matrix4.identity(),
           child: Row(
             children: [
-              // Gradient accent strip
               Container(
                 width: 4,
                 height: 50,
@@ -523,7 +513,6 @@ class _StatCardState extends State<_StatCard> {
                 ),
               ),
               const SizedBox(width: 16),
-              // Content
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -591,7 +580,6 @@ class _StatCardState extends State<_StatCard> {
   }
 }
 
-// Minimal outline filter chip
 class _FilterChipButton extends StatefulWidget {
   final String label;
   final bool isSelected;
@@ -652,7 +640,6 @@ class _FilterChipButtonState extends State<_FilterChipButton> {
   }
 }
 
-// Filter dropdown for bank/discom
 class _FilterDropdown extends StatelessWidget {
   final String label;
   final bool isActive;
@@ -711,7 +698,6 @@ class _FilterDropdown extends StatelessWidget {
   }
 }
 
-// Add button
 class _AddButton extends StatelessWidget {
   final VoidCallback onPressed;
 
@@ -734,7 +720,6 @@ class _AddButton extends StatelessWidget {
   }
 }
 
-// Add BG Dialog (keeping existing logic but with cleaner design)
 class AddBgDialog extends ConsumerStatefulWidget {
   const AddBgDialog({super.key});
 
@@ -751,7 +736,6 @@ class _AddBgDialogState extends ConsumerState<AddBgDialog> {
   final _fdrAmountController = TextEditingController();
   final _roiController = TextEditingController();
 
-  // Date controllers (format: dd/MM/yyyy)
   final _issueDateController = TextEditingController();
   final _expiryDateController = TextEditingController();
   final _claimExpiryDateController = TextEditingController();
@@ -787,7 +771,6 @@ class _AddBgDialogState extends ConsumerState<AddBgDialog> {
   @override
   void initState() {
     super.initState();
-    // Pre-select the firm based on current filter
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final filterState = ref.read(bgFilterProvider);
       if (filterState.firmFilter != null) {
@@ -825,7 +808,6 @@ class _AddBgDialogState extends ConsumerState<AddBgDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header
             Container(
               padding: const EdgeInsets.all(24),
               decoration: const BoxDecoration(
@@ -886,7 +868,6 @@ class _AddBgDialogState extends ConsumerState<AddBgDialog> {
 
             const Divider(height: 1, color: AppColors.border),
 
-            // Form
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
@@ -990,7 +971,6 @@ class _AddBgDialogState extends ConsumerState<AddBgDialog> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Firm selection
                       _buildDropdownField(
                         'Firm',
                         _selectedFirm,
@@ -1002,7 +982,6 @@ class _AddBgDialogState extends ConsumerState<AddBgDialog> {
 
                       const SizedBox(height: 24),
 
-                      // FDR Toggle
                       Row(
                         children: [
                           const _SectionLabel(title: 'FDR Details'),
@@ -1067,7 +1046,6 @@ class _AddBgDialogState extends ConsumerState<AddBgDialog> {
 
             const Divider(height: 1, color: AppColors.border),
 
-            // Actions
             Container(
               padding: const EdgeInsets.all(20),
               child: Row(
@@ -1191,7 +1169,6 @@ class _AddBgDialogState extends ConsumerState<AddBgDialog> {
         issueDate != null &&
         expiryDate != null) {
       try {
-        // Create FDR if enabled
         FdrModel? fdrDetails;
         if (_hasFdr &&
             _fdrNumberController.text.isNotEmpty &&
@@ -1205,7 +1182,6 @@ class _AddBgDialogState extends ConsumerState<AddBgDialog> {
           );
         }
 
-        // Create BG
         final now = DateTime.now();
         final bg = BgModel(
           id: const Uuid().v4(),
@@ -1226,11 +1202,9 @@ class _AddBgDialogState extends ConsumerState<AddBgDialog> {
           firmName: _selectedFirm,
         );
 
-        // Save to repository
         final repo = ref.read(bgRepositoryProvider);
         await repo.addBg(bg);
 
-        // Refresh the providers
         ref.invalidate(allBgsProvider);
         ref.invalidate(dashboardStatsProvider);
 

@@ -1,7 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 
-/// Clean minimal card - white background with soft shadow
 class GlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -43,7 +42,6 @@ class GlassCard extends StatelessWidget {
   }
 }
 
-/// Clean card with subtle shadow
 class PremiumCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -99,7 +97,6 @@ class PremiumCard extends StatelessWidget {
   }
 }
 
-/// Stat card with gradient accent strip
 class GradientStatCard extends StatefulWidget {
   final String title;
   final String value;
@@ -159,7 +156,6 @@ class _GradientStatCardState extends State<GradientStatCard> {
               : Matrix4.identity(),
           child: Row(
             children: [
-              // Gradient accent strip
               Container(
                 width: 4,
                 height: 50,
@@ -169,7 +165,6 @@ class _GradientStatCardState extends State<GradientStatCard> {
                 ),
               ),
               const SizedBox(width: 16),
-              // Content
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

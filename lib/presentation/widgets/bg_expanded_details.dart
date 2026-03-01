@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
@@ -48,10 +48,8 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
       ),
       child: Column(
         children: [
-          // Action Buttons Row
           Row(
             children: [
-              // Extension count badge
               if (widget.bg.extensionHistory.isNotEmpty)
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -83,7 +81,6 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
                   ),
                 ),
               const Spacer(),
-              // Actions
               _ActionButton(
                 icon: Icons.edit_rounded,
                 label: 'Edit',
@@ -131,7 +128,6 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
 
           const SizedBox(height: 20),
 
-          // Tab Bar - Clean and minimal
           Container(
             decoration: BoxDecoration(
               color: AppColors.surface,
@@ -168,7 +164,6 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
 
           const SizedBox(height: 16),
 
-          // Tab Content - Fixed height
           SizedBox(
             height: 240,
             child: TabBarView(
@@ -198,7 +193,6 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // BG Info Card
           Expanded(
             child: _InfoCard(
               title: 'BG Information',
@@ -219,7 +213,6 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
             ),
           ),
           const SizedBox(width: 16),
-          // Expiry Info Card
           Expanded(
             child: _InfoCard(
               title: 'Expiry & Status',
@@ -564,7 +557,6 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
   }
 }
 
-// Action Button
 class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -612,7 +604,6 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-// Info Card
 class _InfoCard extends StatelessWidget {
   final String title;
   final List<_InfoItem> children;
@@ -647,7 +638,6 @@ class _InfoCard extends StatelessWidget {
   }
 }
 
-// Info Item
 class _InfoItem extends StatelessWidget {
   final String label;
   final String value;
@@ -688,7 +678,6 @@ class _InfoItem extends StatelessWidget {
   }
 }
 
-// Empty Tab State
 class _EmptyTabState extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -765,7 +754,6 @@ class _EmptyTabState extends StatelessWidget {
   }
 }
 
-// Extend BG Dialog
 class _ExtendBgDialog extends StatefulWidget {
   final BgModel bg;
   final WidgetRef ref;
@@ -785,7 +773,6 @@ class _ExtendBgDialogState extends State<_ExtendBgDialog> {
   @override
   void initState() {
     super.initState();
-    // Add listeners to update button state when text changes
     _expiryDateController.addListener(_onTextChanged);
     _claimExpiryDateController.addListener(_onTextChanged);
   }
@@ -919,7 +906,6 @@ class _ExtendBgDialogState extends State<_ExtendBgDialog> {
   }
 }
 
-// Upload Document Dialog
 class _UploadDocumentDialog extends StatefulWidget {
   final BgModel bg;
   final WidgetRef ref;
@@ -1107,7 +1093,6 @@ class _UploadDocumentDialogState extends State<_UploadDocumentDialog> {
   }
 }
 
-// Link FDR Dialog
 class _LinkFdrDialog extends StatefulWidget {
   final BgModel bg;
   final WidgetRef ref;
@@ -1258,7 +1243,6 @@ class _LinkFdrDialogState extends State<_LinkFdrDialog> {
   }
 }
 
-// Edit BG Dialog
 class _EditBgDialog extends StatefulWidget {
   final BgModel bg;
   final WidgetRef ref;
@@ -1332,7 +1316,6 @@ class _EditBgDialogState extends State<_EditBgDialog> {
     _selectedBank = widget.bg.bankName;
     _selectedDiscom = widget.bg.discom;
 
-    // FDR details
     _hasFdr = widget.bg.fdrDetails != null;
     if (_hasFdr) {
       final fdr = widget.bg.fdrDetails!;
@@ -1379,7 +1362,6 @@ class _EditBgDialogState extends State<_EditBgDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header
             Container(
               padding: const EdgeInsets.all(24),
               decoration: const BoxDecoration(
@@ -1440,7 +1422,6 @@ class _EditBgDialogState extends State<_EditBgDialog> {
 
             const Divider(height: 1, color: AppColors.border),
 
-            // Form
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
@@ -1545,7 +1526,6 @@ class _EditBgDialogState extends State<_EditBgDialog> {
 
                       const SizedBox(height: 24),
 
-                      // FDR Toggle
                       Row(
                         children: [
                           const _SectionLabel(title: 'FDR Details'),
@@ -1610,7 +1590,6 @@ class _EditBgDialogState extends State<_EditBgDialog> {
 
             const Divider(height: 1, color: AppColors.border),
 
-            // Actions
             Container(
               padding: const EdgeInsets.all(20),
               child: Row(
@@ -1745,7 +1724,6 @@ class _EditBgDialogState extends State<_EditBgDialog> {
       setState(() => _isLoading = true);
 
       try {
-        // Create FDR if enabled
         FdrModel? fdrDetails;
         if (_hasFdr &&
             _fdrNumberController.text.isNotEmpty &&
@@ -1759,7 +1737,6 @@ class _EditBgDialogState extends State<_EditBgDialog> {
           );
         }
 
-        // Update BG
         final updatedBg = widget.bg.copyWith(
           bgNumber: _bgNumberController.text,
           amount: double.tryParse(_amountController.text) ?? widget.bg.amount,
@@ -1773,17 +1750,14 @@ class _EditBgDialogState extends State<_EditBgDialog> {
           updatedAt: DateTime.now(),
         );
 
-        // Save to repository
         final repo = widget.ref.read(bgRepositoryProvider);
         await repo.updateBg(updatedBg);
 
-        // Refresh the providers
         widget.ref.invalidate(allBgsProvider);
         widget.ref.invalidate(dashboardStatsProvider);
 
         if (mounted) {
           Navigator.pop(context);
-          // Close the details dialog too
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1815,7 +1789,6 @@ class _EditBgDialogState extends State<_EditBgDialog> {
   }
 }
 
-// Section Label Widget
 class _SectionLabel extends StatelessWidget {
   final String title;
 

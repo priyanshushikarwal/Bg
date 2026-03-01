@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../providers/bg_providers.dart';
@@ -22,17 +22,13 @@ class HomeScreen extends ConsumerWidget {
       backgroundColor: AppColors.background,
       body: Row(
         children: [
-          // Sidebar
           const AppSidebar(),
 
-          // Main Content
           Expanded(
             child: Column(
               children: [
-                // App Bar
                 CustomAppBar(title: _getScreenTitle(currentScreen)),
 
-                // Screen Content
                 Expanded(child: _buildScreen(currentScreen)),
               ],
             ),

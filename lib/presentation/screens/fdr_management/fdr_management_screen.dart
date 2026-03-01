@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
@@ -25,7 +25,6 @@ class FdrManagementScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -86,7 +85,6 @@ class FdrManagementScreen extends ConsumerWidget {
 
           const SizedBox(height: AppDimensions.spaceLg),
 
-          // FDR Summary
           allBgsAsync.when(
             data: (bgs) => _buildFdrSummary(bgs),
             loading: () => const SizedBox(height: 140),
@@ -95,7 +93,6 @@ class FdrManagementScreen extends ConsumerWidget {
 
           const SizedBox(height: AppDimensions.spaceLg),
 
-          // FDR List
           Expanded(
             child: allBgsAsync.when(
               data: (bgs) => _buildFdrList(context, bgs),
@@ -252,7 +249,6 @@ class FdrManagementScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: AppDimensions.spaceMd),
-          // Table Header
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppDimensions.spaceMd,
@@ -538,7 +534,6 @@ class _AddFdrDialogState extends State<_AddFdrDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Select BG dropdown
             allBgsAsync.when(
               data: (bgs) {
                 final bgsWithoutFdr = bgs

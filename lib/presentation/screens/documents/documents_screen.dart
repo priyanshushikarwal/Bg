@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
@@ -33,7 +33,6 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -94,7 +93,6 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
 
           const SizedBox(height: AppDimensions.spaceLg),
 
-          // Search and Filters
           Row(
             children: [
               Expanded(
@@ -110,7 +108,6 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
 
           const SizedBox(height: AppDimensions.spaceLg),
 
-          // Documents Grid
           Expanded(
             child: allBgsAsync.when(
               data: (bgs) => _buildDocumentsGrid(context, bgs),
@@ -159,7 +156,6 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
   Widget _buildDocumentsGrid(BuildContext context, List<BgModel> bgs) {
     final dateFormat = DateFormat('dd MMM yyyy');
 
-    // Collect all documents with BG info
     final List<Map<String, dynamic>> allDocs = [];
     for (final bg in bgs) {
       for (final doc in bg.documents) {
@@ -398,7 +394,6 @@ class _UploadDocumentDialogState extends State<_UploadDocumentDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Select BG dropdown
             allBgsAsync.when(
               data: (bgs) {
                 return DropdownButtonFormField<String>(

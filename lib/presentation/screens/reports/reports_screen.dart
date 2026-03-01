@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
@@ -21,7 +21,6 @@ class ReportsScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -93,7 +92,6 @@ class ReportsScreen extends ConsumerWidget {
 
           const SizedBox(height: AppDimensions.spaceLg),
 
-          // Reports Content
           Expanded(
             child: allBgsAsync.when(
               data: (bgs) => _buildReportsContent(context, bgs),
@@ -110,12 +108,10 @@ class ReportsScreen extends ConsumerWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Left Column - Charts
         Expanded(
           flex: 2,
           child: Column(
             children: [
-              // Status Distribution
               Expanded(
                 child: PremiumCard(
                   enableHover: false,
@@ -136,7 +132,6 @@ class ReportsScreen extends ConsumerWidget {
 
               const SizedBox(height: AppDimensions.spaceMd),
 
-              // Amount by Bank
               Expanded(
                 child:
                     PremiumCard(
@@ -164,11 +159,9 @@ class ReportsScreen extends ConsumerWidget {
 
         const SizedBox(width: AppDimensions.spaceMd),
 
-        // Right Column - Quick Reports
         Expanded(
           child: Column(
             children: [
-              // Expiry Calendar
               Expanded(
                 child:
                     PremiumCard(
@@ -193,7 +186,6 @@ class ReportsScreen extends ConsumerWidget {
 
               const SizedBox(height: AppDimensions.spaceMd),
 
-              // Quick Stats
               _buildQuickStatCard(
                     'Average BG Amount',
                     _calculateAvgAmount(bgs),
@@ -238,7 +230,6 @@ class ReportsScreen extends ConsumerWidget {
 
     return Row(
       children: [
-        // Simple pie chart visualization
         Expanded(
           child: Center(
             child: Stack(
@@ -286,7 +277,6 @@ class ReportsScreen extends ConsumerWidget {
             ),
           ),
         ),
-        // Legend
         Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -324,7 +314,6 @@ class ReportsScreen extends ConsumerWidget {
       decimalDigits: 1,
     );
 
-    // Group by bank
     final Map<String, double> bankAmounts = {};
     for (final bg in bgs.where((bg) => bg.status == BgStatus.active)) {
       bankAmounts[bg.bankName] = (bankAmounts[bg.bankName] ?? 0) + bg.amount;

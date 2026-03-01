@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/theme/app_theme.dart';
@@ -9,7 +9,6 @@ import 'presentation/screens/auth/login_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Supabase
   await SupabaseService.init();
 
   runApp(const ProviderScope(child: BgManagerApp()));
@@ -29,7 +28,6 @@ class BgManagerApp extends StatelessWidget {
   }
 }
 
-/// Auth wrapper - decides between Login screen and Home screen
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
@@ -38,20 +36,17 @@ class AuthWrapper extends StatelessWidget {
     return StreamBuilder<AuthState>(
       stream: SupabaseService.authStateChanges,
       builder: (context, snapshot) {
-        // Show loading while checking auth status
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const _SplashScreen();
         }
 
         final authState = snapshot.data;
 
-        // If user is logged in, show main app
         if (authState?.event == AuthChangeEvent.signedIn ||
             SupabaseService.isLoggedIn) {
           return const HomeScreen();
         }
 
-        // Otherwise show login screen
         return const LoginScreen();
       },
     );

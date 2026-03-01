@@ -1,9 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_dimensions.dart';
 import '../../core/utils/date_utils.dart';
 
-/// Custom text field with premium styling
 class PremiumTextField extends StatefulWidget {
   final TextEditingController? controller;
   final String? label;
@@ -151,7 +150,6 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
   }
 }
 
-/// Search bar with premium styling
 class PremiumSearchBar extends StatefulWidget {
   final TextEditingController? controller;
   final String hint;
@@ -230,7 +228,6 @@ class _PremiumSearchBarState extends State<PremiumSearchBar> {
   }
 }
 
-/// Dropdown with premium styling
 class PremiumDropdown<T> extends StatefulWidget {
   final String? label;
   final String hint;
@@ -331,7 +328,6 @@ class _PremiumDropdownState<T> extends State<PremiumDropdown<T>> {
   }
 }
 
-/// Date picker field with premium styling
 class PremiumDateField extends StatefulWidget {
   final String? label;
   final String hint;
@@ -444,8 +440,6 @@ class _PremiumDateFieldState extends State<PremiumDateField> {
   }
 }
 
-/// A premium text field designed specifically for manual date entry
-/// It automatically formats the input into 'dd-mm-yy' on blur
 class PremiumManualDateField extends StatefulWidget {
   final TextEditingController controller;
   final String? label;

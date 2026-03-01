@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
@@ -30,7 +30,6 @@ class CustomAppBar extends ConsumerWidget {
         children: [
           const Spacer(),
 
-          // Search Bar
           _SearchField(
             onChanged: (query) {
               ref.read(bgFilterProvider.notifier).setSearchQuery(query);
@@ -39,7 +38,6 @@ class CustomAppBar extends ConsumerWidget {
 
           const SizedBox(width: 16),
 
-          // Notification Button
           _IconButton(
             icon: Icons.notifications_none_rounded,
             badge: true,
@@ -48,7 +46,6 @@ class CustomAppBar extends ConsumerWidget {
 
           const SizedBox(width: 8),
 
-          // Profile Button
           _ProfileAvatar(),
 
           if (actions != null) ...[const SizedBox(width: 12), ...actions!],

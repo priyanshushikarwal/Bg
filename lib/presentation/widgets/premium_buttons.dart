@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_dimensions.dart';
 
-/// Premium gradient button with hover effects
 class GradientButton extends StatefulWidget {
   final String text;
   final VoidCallback? onPressed;
@@ -126,7 +125,6 @@ class _GradientButtonState extends State<GradientButton> {
   }
 }
 
-/// Outlined button with hover effect
 class PremiumOutlinedButton extends StatefulWidget {
   final String text;
   final VoidCallback? onPressed;
@@ -214,7 +212,6 @@ class _PremiumOutlinedButtonState extends State<PremiumOutlinedButton> {
   }
 }
 
-/// Icon button with tooltip and hover effect
 class PremiumIconButton extends StatefulWidget {
   final IconData icon;
   final VoidCallback? onPressed;
@@ -291,7 +288,6 @@ class _PremiumIconButtonState extends State<PremiumIconButton> {
   }
 }
 
-/// Chip-style filter button
 class PremiumFilterChip extends StatefulWidget {
   final String label;
   final bool isSelected;

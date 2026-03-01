@@ -1,9 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
 
-/// Empty state widget - minimal design
 class EmptyStateWidget extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -88,7 +87,6 @@ class EmptyStateWidget extends StatelessWidget {
   }
 }
 
-/// Error state widget - minimal design
 class ErrorStateWidget extends StatelessWidget {
   final String message;
   final VoidCallback? onRetry;
@@ -160,7 +158,6 @@ class ErrorStateWidget extends StatelessWidget {
   }
 }
 
-/// Loading shimmer for cards
 class ShimmerCard extends StatelessWidget {
   final double? width;
   final double height;
@@ -190,7 +187,6 @@ class ShimmerCard extends StatelessWidget {
   }
 }
 
-/// Loading shimmer for table rows
 class ShimmerTableRow extends StatelessWidget {
   final double height;
 
@@ -213,7 +209,6 @@ class ShimmerTableRow extends StatelessWidget {
   }
 }
 
-/// Dashboard loading shimmer
 class DashboardLoadingShimmer extends StatelessWidget {
   const DashboardLoadingShimmer({super.key});
 
@@ -225,7 +220,6 @@ class DashboardLoadingShimmer extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Stats cards
           SizedBox(
             height: 120,
             child: Row(
@@ -244,7 +238,6 @@ class DashboardLoadingShimmer extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 32),
-          // Table rows
           Expanded(
             child: Column(
               children: List.generate(
@@ -266,7 +259,6 @@ class DashboardLoadingShimmer extends StatelessWidget {
   }
 }
 
-/// Status badge - pastel and subtle
 class StatusBadge extends StatelessWidget {
   final String label;
   final Color color;
@@ -336,7 +328,6 @@ class StatusBadge extends StatelessWidget {
   }
 }
 
-/// Info row for details - clean and minimal
 class InfoRow extends StatelessWidget {
   final String label;
   final String value;
@@ -389,7 +380,6 @@ class InfoRow extends StatelessWidget {
   }
 }
 
-/// Section header - clean and minimal
 class SectionHeader extends StatelessWidget {
   final String title;
   final IconData? icon;

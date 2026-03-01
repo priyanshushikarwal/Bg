@@ -1,14 +1,9 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/updater_service.dart';
 
-/// A dialog that walks through four states:
-///   1. Initial – shows release info with "Later" / "Update Now"
-///   2. Downloading – streaming progress bar
-///   3. Installing – indeterminate spinner, then app exits
-///   4. Error – retry / cancel
 class UpdateAvailableDialog extends StatefulWidget {
   final String currentVersion;
   final String newVersion;
@@ -36,9 +31,6 @@ class _UpdateAvailableDialogState extends State<UpdateAvailableDialog> {
   final UpdaterService _updaterService = UpdaterService();
   String? _savedZipPath;
 
-  // ------------------------------------------------------------------
-  // Actions
-  // ------------------------------------------------------------------
 
   Future<void> _startDownload() async {
     setState(() {
@@ -60,12 +52,9 @@ class _UpdateAvailableDialogState extends State<UpdateAvailableDialog> {
 
       if (!mounted) return;
 
-      // Move to installing
       setState(() => _state = _UpdateState.installing);
 
       await _updaterService.installUpdateAndRestart(_savedZipPath!);
-      // The app will exit inside installUpdateAndRestart — we should never
-      // reach this line.
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -76,9 +65,6 @@ class _UpdateAvailableDialogState extends State<UpdateAvailableDialog> {
     }
   }
 
-  // ------------------------------------------------------------------
-  // UI
-  // ------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -107,7 +93,6 @@ class _UpdateAvailableDialogState extends State<UpdateAvailableDialog> {
     }
   }
 
-  // ---- STATE 1: Initial ---------------------------------------------------
 
   Widget _buildInitial(BuildContext dialogContext) {
     return Column(
@@ -198,7 +183,6 @@ class _UpdateAvailableDialogState extends State<UpdateAvailableDialog> {
     );
   }
 
-  // ---- STATE 2: Downloading ------------------------------------------------
 
   Widget _buildDownloading(BuildContext dialogContext) {
     final percentage = (_progress * 100).toInt();
@@ -230,7 +214,6 @@ class _UpdateAvailableDialogState extends State<UpdateAvailableDialog> {
     );
   }
 
-  // ---- STATE 3: Installing -------------------------------------------------
 
   Widget _buildInstalling() {
     return const Column(
@@ -256,7 +239,6 @@ class _UpdateAvailableDialogState extends State<UpdateAvailableDialog> {
     );
   }
 
-  // ---- STATE 4: Error ------------------------------------------------------
 
   Widget _buildError(BuildContext dialogContext) {
     return Column(

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_dimensions.dart';
@@ -22,13 +22,11 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
       decoration: const BoxDecoration(color: AppColors.sidebarBackground),
       child: Column(
         children: [
-          // Logo Section
           Container(
             height: 80,
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
-                // Logo mark
                 Container(
                   width: 42,
                   height: 42,
@@ -81,14 +79,12 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
             ),
           ),
 
-          // Navigation Items
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Firm Selector Section
                   Padding(
                     padding: const EdgeInsets.only(left: 12, bottom: 8, top: 4),
                     child: Text(
@@ -103,7 +99,6 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                   ),
                   _FirmSelector(),
                   const SizedBox(height: 16),
-                  // Section Label
                   Padding(
                     padding: const EdgeInsets.only(left: 12, bottom: 8, top: 4),
                     child: Text(
@@ -159,7 +154,6 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
 
                   const Spacer(),
 
-                  // Settings
                   Padding(
                     padding: const EdgeInsets.only(left: 12, bottom: 8, top: 4),
                     child: Text(
@@ -181,7 +175,6 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                             AppScreen.settings,
                   ),
 
-                  // Version display
                   Padding(
                     padding: const EdgeInsets.only(left: 24, top: 8, bottom: 4),
                     child: Text(
@@ -198,7 +191,6 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
             ),
           ),
 
-          // Bottom User Section
           Container(
             margin: const EdgeInsets.all(12),
             padding: const EdgeInsets.all(12),
@@ -321,7 +313,6 @@ class _SidebarItemState extends State<_SidebarItem> {
               ),
               child: Row(
                 children: [
-                  // Gradient indicator for selected
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
                     width: 3,
@@ -335,7 +326,6 @@ class _SidebarItemState extends State<_SidebarItem> {
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  // Icon
                   Icon(
                     widget.icon,
                     size: 20,
@@ -346,7 +336,6 @@ class _SidebarItemState extends State<_SidebarItem> {
                           ),
                   ),
                   const SizedBox(width: 12),
-                  // Label
                   Expanded(
                     child: Text(
                       widget.label,
@@ -373,7 +362,6 @@ class _SidebarItemState extends State<_SidebarItem> {
   }
 }
 
-// Firm Selector Widget
 class _FirmSelector extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -395,7 +383,6 @@ class _FirmSelector extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // "All Firms" option
           _FirmOption(
             name: 'All Firms',
             isSelected: selectedFirm == null,
@@ -403,7 +390,6 @@ class _FirmSelector extends ConsumerWidget {
               ref.read(bgFilterProvider.notifier).setFirmFilter(null);
             },
           ),
-          // Individual firms
           ...firms.map(
             (firm) => _FirmOption(
               name: firm,

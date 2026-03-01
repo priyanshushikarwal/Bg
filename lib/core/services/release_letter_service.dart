@@ -1,4 +1,4 @@
-import 'package:pdf/pdf.dart';
+﻿import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
 import '../../data/models/bg_model.dart';
@@ -12,11 +12,9 @@ class ReleaseLetterService {
   );
   static final _dateFormat = DateFormat('dd/MM/yyyy');
 
-  /// Generates a PDF release letter matching the Firm-to-Bank style from the image
   static Future<String> generateReleaseLetter(BgModel bg) async {
     final pdf = pw.Document();
 
-    // Standard A4 margin is 0.5 - 1 inch
     const pageMargin = pw.EdgeInsets.all(40);
 
     pdf.addPage(
@@ -44,7 +42,6 @@ class ReleaseLetterService {
             font: pw.Font.times(),
           );
 
-          // Dynamic Reference Prefix based on Firm Name initials
           final firmInitials = bg.firmName
               .split(' ')
               .map((e) => e.isNotEmpty ? e[0] : '')
@@ -56,7 +53,6 @@ class ReleaseLetterService {
 
           return pw.Stack(
             children: [
-              // --- Watermark ---
               pw.Center(
                 child: pw.Transform.rotate(
                   angle: -0.5,
@@ -64,18 +60,16 @@ class ReleaseLetterService {
                     bg.firmName.split(' ').take(3).join(' ').toUpperCase(),
                     style: pw.TextStyle(
                       fontSize: 80,
-                      color: PdfColors.grey200, // Very light grey
+                      color: PdfColors.grey200,
                       fontWeight: pw.FontWeight.bold,
                     ),
                   ),
                 ),
               ),
 
-              // --- Body Content ---
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  // --- Header Section ---
                   pw.Center(
                     child: pw.Column(
                       children: [
@@ -112,7 +106,7 @@ class ReleaseLetterService {
                           height: 1.5,
                           color: PdfColor.fromHex(
                             '#800000',
-                          ), // Dark red/maroon line
+                          ),
                         ),
                       ],
                     ),
@@ -120,7 +114,6 @@ class ReleaseLetterService {
 
                   pw.SizedBox(height: 15),
 
-                  // --- Ref & Date ---
                   pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
@@ -134,7 +127,6 @@ class ReleaseLetterService {
 
                   pw.SizedBox(height: 20),
 
-                  // --- To Section ---
                   pw.Text('To,', style: boldStyle),
                   pw.Text('The Branch Manager', style: boldStyle),
                   pw.Text(bg.bankName, style: boldStyle),
@@ -142,7 +134,6 @@ class ReleaseLetterService {
 
                   pw.SizedBox(height: 20),
 
-                  // --- Subject ---
                   pw.RichText(
                     text: pw.TextSpan(
                       children: [
@@ -163,11 +154,9 @@ class ReleaseLetterService {
 
                   pw.SizedBox(height: 15),
 
-                  // --- Salutation ---
                   pw.Text('Respected Sir/Madam,', style: textStyle),
                   pw.SizedBox(height: 10),
 
-                  // --- Body 1 ---
                   pw.RichText(
                     textAlign: pw.TextAlign.justify,
                     text: pw.TextSpan(
@@ -187,7 +176,6 @@ class ReleaseLetterService {
                   ),
                   pw.SizedBox(height: 10),
 
-                  // --- Body 2 ---
                   pw.RichText(
                     textAlign: pw.TextAlign.justify,
                     text: pw.TextSpan(
@@ -215,7 +203,6 @@ class ReleaseLetterService {
                   ),
                   pw.SizedBox(height: 10),
 
-                  // --- Body 3 ---
                   pw.RichText(
                     textAlign: pw.TextAlign.justify,
                     text: pw.TextSpan(
@@ -237,7 +224,6 @@ class ReleaseLetterService {
 
                   pw.SizedBox(height: 20),
 
-                  // --- BG Details Section ---
                   pw.Text('Bank Guarantee Details:', style: boldStyle),
                   pw.SizedBox(height: 8),
                   _buildBulletPoint(
@@ -267,7 +253,6 @@ class ReleaseLetterService {
 
                   pw.SizedBox(height: 20),
 
-                  // --- Enclosures ---
                   pw.Text('Enclosures:', style: boldStyle),
                   pw.SizedBox(height: 8),
                   pw.Padding(
@@ -308,7 +293,6 @@ class ReleaseLetterService {
       ),
     );
 
-    // Save logic
     final fileName = 'Release_Letter_${bg.bgNumber.replaceAll('/', '_')}.pdf';
     final bytes = await pdf.save();
 

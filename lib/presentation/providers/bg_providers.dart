@@ -1,16 +1,13 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/bg_model.dart';
 import '../../data/repositories/bg_repository.dart';
 
-// Repository Provider
 final bgRepositoryProvider = Provider<BgRepository>((ref) {
   return BgRepository();
 });
 
-// Filter State
 enum BgFilterType { all, active, expired, released, expiringWithin50Days }
 
-// Available firm list for the client
 const List<String> availableFirms = ['DoonInfra', 'BI High Power Tech', 'BI'];
 
 class BgFilterState {
@@ -57,7 +54,6 @@ class BgFilterState {
       firmFilter != null;
 }
 
-// Filter State Provider
 final bgFilterProvider = StateNotifierProvider<BgFilterNotifier, BgFilterState>(
   (ref) {
     return BgFilterNotifier();
@@ -104,13 +100,11 @@ class BgFilterNotifier extends StateNotifier<BgFilterState> {
   }
 }
 
-// All BGs Provider
 final allBgsProvider = FutureProvider<List<BgModel>>((ref) async {
   final repository = ref.watch(bgRepositoryProvider);
   return repository.getAllBgs();
 });
 
-// Filtered BGs Provider
 final filteredBgsProvider = Provider<AsyncValue<List<BgModel>>>((ref) {
   final allBgsAsync = ref.watch(allBgsProvider);
   final filterState = ref.watch(bgFilterProvider);
@@ -118,14 +112,12 @@ final filteredBgsProvider = Provider<AsyncValue<List<BgModel>>>((ref) {
   return allBgsAsync.whenData((allBgs) {
     List<BgModel> filtered = allBgs;
 
-    // Apply firm filter first (primary filter)
     if (filterState.firmFilter != null) {
       filtered = filtered
           .where((bg) => bg.firmName == filterState.firmFilter)
           .toList();
     }
 
-    // Apply status filter
     switch (filterState.filterType) {
       case BgFilterType.active:
         filtered = filtered
@@ -149,21 +141,18 @@ final filteredBgsProvider = Provider<AsyncValue<List<BgModel>>>((ref) {
         break;
     }
 
-    // Apply bank filter
     if (filterState.bankFilter != null) {
       filtered = filtered
           .where((bg) => bg.bankName == filterState.bankFilter)
           .toList();
     }
 
-    // Apply discom filter
     if (filterState.discomFilter != null) {
       filtered = filtered
           .where((bg) => bg.discom == filterState.discomFilter)
           .toList();
     }
 
-    // Apply search query
     if (filterState.searchQuery.isNotEmpty) {
       final query = filterState.searchQuery.toLowerCase();
       filtered = filtered.where((bg) {
@@ -175,14 +164,12 @@ final filteredBgsProvider = Provider<AsyncValue<List<BgModel>>>((ref) {
       }).toList();
     }
 
-    // Sort by expiry date
     filtered.sort((a, b) => a.currentExpiryDate.compareTo(b.currentExpiryDate));
 
     return filtered;
   });
 });
 
-// Dashboard Statistics Providers - now computed from allBgsProvider (Supabase data)
 final dashboardStatsProvider = Provider<AsyncValue<DashboardStats>>((ref) {
   final allBgsAsync = ref.watch(allBgsProvider);
   final filterState = ref.watch(bgFilterProvider);
@@ -190,7 +177,6 @@ final dashboardStatsProvider = Provider<AsyncValue<DashboardStats>>((ref) {
   return allBgsAsync.whenData((allBgs) {
     var bgs = allBgs;
 
-    // Apply firm filter to stats
     if (filterState.firmFilter != null) {
       bgs = bgs.where((bg) => bg.firmName == filterState.firmFilter).toList();
     }
@@ -237,24 +223,20 @@ class DashboardStats {
   });
 }
 
-// Bank Names Provider - derived from fetched data
 final bankNamesProvider = FutureProvider<Set<String>>((ref) async {
   final repository = ref.watch(bgRepositoryProvider);
   return repository.getAllBankNames();
 });
 
-// Discom Names Provider - derived from fetched data
 final discomNamesProvider = FutureProvider<Set<String>>((ref) async {
   final repository = ref.watch(bgRepositoryProvider);
   return repository.getAllDiscoms();
 });
 
-// Firm Names Provider - using the predefined list
 final firmNamesProvider = Provider<List<String>>((ref) {
   return availableFirms;
 });
 
-// Selected BG Provider (for detail view)
 final selectedBgIdProvider = StateProvider<String?>((ref) => null);
 
 final selectedBgProvider = FutureProvider<BgModel?>((ref) async {
@@ -264,7 +246,6 @@ final selectedBgProvider = FutureProvider<BgModel?>((ref) async {
   return repository.getBgById(selectedId);
 });
 
-// Expanded BG Row Provider
 final expandedBgIdsProvider =
     StateNotifierProvider<ExpandedBgIdsNotifier, Set<String>>((ref) {
       return ExpandedBgIdsNotifier();
@@ -294,14 +275,12 @@ class ExpandedBgIdsNotifier extends StateNotifier<Set<String>> {
   }
 }
 
-// Navigation Provider
 enum AppScreen { dashboard, bgManagement, fdrManagement, documents, reports, settings }
 
 final currentScreenProvider = StateProvider<AppScreen>(
   (ref) => AppScreen.dashboard,
 );
 
-// BG Mutation Provider
 class BgMutationNotifier extends StateNotifier<AsyncValue<void>> {
   final BgRepository _repository;
   final Ref _ref;

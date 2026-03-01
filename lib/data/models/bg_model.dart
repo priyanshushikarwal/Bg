@@ -1,4 +1,4 @@
-import 'package:hive/hive.dart';
+﻿import 'package:hive/hive.dart';
 
 part 'bg_model.g.dart';
 
@@ -119,7 +119,6 @@ class BgModel extends HiveObject {
     );
   }
 
-  // Check if BG is expiring within given days
   bool isExpiringWithinDays(int days) {
     if (status != BgStatus.active) return false;
     final now = DateTime.now();
@@ -127,28 +126,23 @@ class BgModel extends HiveObject {
     return daysUntilExpiry >= 0 && daysUntilExpiry <= days;
   }
 
-  // Check if BG is expired
   bool get isExpired {
     if (status == BgStatus.released) return false;
     return DateTime.now().isAfter(expiryDate);
   }
 
-  // Get current expiry date (considering extensions)
   DateTime get currentExpiryDate {
     if (extensionHistory.isEmpty) return expiryDate;
     return extensionHistory.last.newBgExpiryDate;
   }
 
-  // Get current claim expiry date (considering extensions)
   DateTime get currentClaimExpiryDate {
     if (extensionHistory.isEmpty) return claimExpiryDate;
     return extensionHistory.last.newClaimExpiryDate;
   }
 
-  // Get number of extensions
   int get extensionCount => extensionHistory.length;
 
-  // Get days until expiry
   int get daysUntilExpiry {
     final now = DateTime.now();
     return currentExpiryDate.difference(now).inDays;
@@ -170,7 +164,7 @@ class FdrModel extends HiveObject {
   final double fdrAmount;
 
   @HiveField(4)
-  final double roi; // Rate of Interest in percentage
+  final double roi;
 
   @HiveField(5)
   final String? bankName;
@@ -227,7 +221,7 @@ class ExtensionModel extends HiveObject {
   final String? remarks;
 
   @HiveField(5)
-  final String? documentId; // Reference to the extended BG copy document
+  final String? documentId;
 
   ExtensionModel({
     required this.id,

@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 
@@ -21,7 +21,6 @@ Future<String> saveAndOpenFile(String fileName, Uint8List bytes) async {
   final file = File(filePath);
   await file.writeAsBytes(bytes);
 
-  // Open the file
   try {
     if (Platform.isWindows) {
       await Process.run('cmd', ['/c', 'start', '', filePath]);
@@ -31,7 +30,6 @@ Future<String> saveAndOpenFile(String fileName, Uint8List bytes) async {
       await Process.run('xdg-open', [filePath]);
     }
   } catch (e) {
-    // Ignore open errors
   }
 
   return filePath;

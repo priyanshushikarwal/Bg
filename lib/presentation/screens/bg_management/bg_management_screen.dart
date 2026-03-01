@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
@@ -26,7 +26,6 @@ class BgManagementScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -109,7 +108,6 @@ class BgManagementScreen extends ConsumerWidget {
 
           const SizedBox(height: AppDimensions.spaceLg),
 
-          // Quick Stats
           filteredBgsAsync.when(
             data: (bgs) => _buildQuickStats(bgs),
             loading: () => const SizedBox(height: 80),
@@ -118,7 +116,6 @@ class BgManagementScreen extends ConsumerWidget {
 
           const SizedBox(height: AppDimensions.spaceLg),
 
-          // Content Grid
           Expanded(
             child: filteredBgsAsync.when(
               data: (bgs) => _buildBgGrid(context, bgs),
@@ -226,7 +223,6 @@ class BgManagementScreen extends ConsumerWidget {
           ),
           child: Column(
             children: [
-              // Header
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -283,7 +279,6 @@ class BgManagementScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              // Details
               Expanded(child: BgExpandedDetails(bg: bg)),
             ],
           ),
@@ -451,7 +446,6 @@ class _CompactBgCardState extends State<_CompactBgCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header row with icon and status
               Row(
                 children: [
                   Container(
@@ -479,7 +473,6 @@ class _CompactBgCardState extends State<_CompactBgCard> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  // Status dot
                   Container(
                     width: 6,
                     height: 6,
@@ -491,7 +484,6 @@ class _CompactBgCardState extends State<_CompactBgCard> {
                 ],
               ),
               const SizedBox(height: 8),
-              // Bank name
               Text(
                 bg.bankName,
                 style: const TextStyle(
@@ -502,7 +494,6 @@ class _CompactBgCardState extends State<_CompactBgCard> {
                 overflow: TextOverflow.ellipsis,
               ),
               const Spacer(),
-              // Amount and expiry
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

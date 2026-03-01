@@ -1,4 +1,4 @@
-import 'package:hive_flutter/hive_flutter.dart';
+﻿import 'package:hive_flutter/hive_flutter.dart';
 import '../models/bg_model.dart';
 
 class HiveService {
@@ -7,7 +7,6 @@ class HiveService {
   static Future<void> init() async {
     await Hive.initFlutter();
 
-    // Register adapters
     Hive.registerAdapter(BgStatusAdapter());
     Hive.registerAdapter(BgModelAdapter());
     Hive.registerAdapter(FdrModelAdapter());
@@ -15,13 +14,11 @@ class HiveService {
     Hive.registerAdapter(DocumentTypeAdapter());
     Hive.registerAdapter(DocumentModelAdapter());
 
-    // Open boxes
     await Hive.openBox<BgModel>(bgBoxName);
   }
 
   static Box<BgModel> get bgBox => Hive.box<BgModel>(bgBoxName);
 
-  // BG CRUD Operations
   static Future<void> addBg(BgModel bg) async {
     await bgBox.put(bg.id, bg);
   }
@@ -78,7 +75,6 @@ class HiveService {
     return bgBox.values.where((bg) => bg.discom == discom).toList();
   }
 
-  // Statistics
   static double getTotalBgAmount() {
     return bgBox.values
         .where((bg) => bg.status == BgStatus.active)
@@ -119,7 +115,6 @@ class HiveService {
     return bgBox.values.where((bg) => bg.firmName == firmName).toList();
   }
 
-  // Clear all data
   static Future<void> clearAllBgs() async {
     await bgBox.clear();
   }

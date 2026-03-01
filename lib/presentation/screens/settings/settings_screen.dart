@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,7 +8,6 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../widgets/update_available_dialog.dart';
 
-/// Settings screen that currently provides an "Updates" section.
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -19,11 +18,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _checkingForUpdates = false;
 
-  // ------------------------------------------------------------------
-  // Version comparison helper
-  // ------------------------------------------------------------------
 
-  /// Returns `true` when [remote] is newer than [local].
   bool _isNewer(String remote, String local) {
     final rParts = remote.split('.').map(int.tryParse).toList();
     final lParts = local.split('.').map(int.tryParse).toList();
@@ -37,9 +32,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return false;
   }
 
-  // ------------------------------------------------------------------
-  // Check for updates
-  // ------------------------------------------------------------------
 
   Future<void> _checkForUpdates() async {
     if (_checkingForUpdates) return;
@@ -132,9 +124,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  // ------------------------------------------------------------------
-  // Build
-  // ------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +132,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section: Updates
           _SectionCard(
             title: 'Updates',
             icon: Icons.system_update_alt_rounded,
@@ -201,9 +189,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 }
 
-// ==========================================================================
-// Reusable section card
-// ==========================================================================
 
 class _SectionCard extends StatelessWidget {
   final String title;

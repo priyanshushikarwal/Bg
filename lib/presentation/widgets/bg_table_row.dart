@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants/app_colors.dart';
@@ -88,7 +88,6 @@ class _BgTableRowState extends ConsumerState<BgTableRow>
             : Matrix4.identity(),
         child: Column(
           children: [
-            // Main Row
             InkWell(
               onTap: () {
                 ref.read(expandedBgIdsProvider.notifier).toggle(widget.bg.id);
@@ -102,7 +101,6 @@ class _BgTableRowState extends ConsumerState<BgTableRow>
                 ),
                 child: Row(
                   children: [
-                    // BG Icon + Number
                     Expanded(
                       flex: 2,
                       child: Row(
@@ -225,7 +223,6 @@ class _BgTableRowState extends ConsumerState<BgTableRow>
                       ),
                     ),
 
-                    // Amount
                     Expanded(
                       child: Text(
                         _currencyFormat.format(widget.bg.amount),
@@ -238,7 +235,6 @@ class _BgTableRowState extends ConsumerState<BgTableRow>
                       ),
                     ),
 
-                    // Expiry
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -263,7 +259,6 @@ class _BgTableRowState extends ConsumerState<BgTableRow>
                       ),
                     ),
 
-                    // Discom
                     Expanded(
                       child: Text(
                         widget.bg.discom,
@@ -275,10 +270,8 @@ class _BgTableRowState extends ConsumerState<BgTableRow>
                       ),
                     ),
 
-                    // Status Pill
                     SizedBox(width: 100, child: _buildStatusPill()),
 
-                    // Expand Arrow
                     AnimatedRotation(
                       turns: isExpanded ? 0.5 : 0,
                       duration: const Duration(milliseconds: 200),
@@ -304,7 +297,6 @@ class _BgTableRowState extends ConsumerState<BgTableRow>
               ),
             ),
 
-            // Expanded Details
             SizeTransition(
               sizeFactor: _expandAnimation,
               child: BgExpandedDetails(bg: widget.bg),

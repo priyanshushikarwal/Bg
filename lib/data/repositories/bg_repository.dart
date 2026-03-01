@@ -1,11 +1,10 @@
-import 'package:uuid/uuid.dart';
+﻿import 'package:uuid/uuid.dart';
 import '../models/bg_model.dart';
 import '../../core/services/supabase_service.dart';
 
 class BgRepository {
   final _uuid = const Uuid();
 
-  // ========== CRUD Operations ==========
 
   Future<List<BgModel>> getAllBgs() async {
     return await SupabaseService.fetchAllBgs();
@@ -33,7 +32,6 @@ class BgRepository {
     await SupabaseService.deleteBg(id);
   }
 
-  // ========== Filtering (done in-memory from fetched data) ==========
 
   Future<List<BgModel>> getActiveBgs() async {
     final allBgs = await getAllBgs();
@@ -81,7 +79,6 @@ class BgRepository {
     return allBgs.where((bg) => bg.discom == discom).toList();
   }
 
-  // ========== BG Extension ==========
 
   Future<void> extendBg(String bgId, ExtensionModel extension) async {
     final bg = await getBgById(bgId);
@@ -97,7 +94,6 @@ class BgRepository {
     }
   }
 
-  // ========== BG Release ==========
 
   Future<void> releaseBg(String bgId) async {
     final bg = await getBgById(bgId);
@@ -110,7 +106,6 @@ class BgRepository {
     }
   }
 
-  // ========== Document Operations ==========
 
   Future<void> addDocument(String bgId, DocumentModel document) async {
     final bg = await getBgById(bgId);
@@ -138,7 +133,6 @@ class BgRepository {
     }
   }
 
-  // ========== Statistics ==========
 
   Future<double> getTotalBgAmount() async {
     final allBgs = await getActiveBgs();
@@ -177,7 +171,6 @@ class BgRepository {
     return allBgs.map((bg) => bg.discom).where((d) => d.isNotEmpty).toSet();
   }
 
-  // ========== Factory Methods ==========
 
   BgModel createBg({
     required String bgNumber,
