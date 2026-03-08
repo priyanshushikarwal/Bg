@@ -118,15 +118,15 @@ class SupabaseService {
       rethrow;
     }
 
-    if (bg.extensionHistory.isNotEmpty) {
-      try {
-        await _withRetry(
-          () => client
-              .from(SupabaseConstants.extensionsTable)
-              .delete()
-              .eq('bg_id', bg.id),
-        );
+    try {
+      await _withRetry(
+        () => client
+            .from(SupabaseConstants.extensionsTable)
+            .delete()
+            .eq('bg_id', bg.id),
+      );
 
+      if (bg.extensionHistory.isNotEmpty) {
         final extensions = bg.extensionHistory
             .map(
               (ext) => {
@@ -143,21 +143,19 @@ class SupabaseService {
             )
             .toList();
 
-        if (extensions.isNotEmpty) {
-          await _withRetry(
-            () => client
-                .from(SupabaseConstants.extensionsTable)
-                .upsert(extensions),
-          );
-          debugPrint('✅ ${extensions.length} extensions synced!');
-        }
-      } catch (e) {
-        debugPrint('❌ Extensions sync FAILED: $e');
+        await _withRetry(
+          () => client
+              .from(SupabaseConstants.extensionsTable)
+              .upsert(extensions),
+        );
+        debugPrint('✅ ${extensions.length} extensions synced!');
       }
+    } catch (e) {
+      debugPrint('❌ Extensions sync FAILED: $e');
     }
 
-    if (bg.fdrDetails != null) {
-      try {
+    try {
+      if (bg.fdrDetails != null) {
         await _withRetry(
           () => client.from(SupabaseConstants.fdrTable).upsert({
             'id': bg.fdrDetails!.id,
@@ -172,21 +170,28 @@ class SupabaseService {
           }),
         );
         debugPrint('✅ FDR synced!');
-      } catch (e) {
-        debugPrint('❌ FDR sync FAILED: $e');
-        rethrow;
-      }
-    }
-
-    if (bg.documents.isNotEmpty) {
-      try {
-        await _withRetry(
+      } else {
+         await _withRetry(
           () => client
-              .from(SupabaseConstants.documentsTable)
+              .from(SupabaseConstants.fdrTable)
               .delete()
               .eq('bg_id', bg.id),
         );
+      }
+    } catch (e) {
+      debugPrint('❌ FDR sync FAILED: $e');
+      rethrow;
+    }
 
+    try {
+      await _withRetry(
+        () => client
+            .from(SupabaseConstants.documentsTable)
+            .delete()
+            .eq('bg_id', bg.id),
+      );
+
+      if (bg.documents.isNotEmpty) {
         final docs = bg.documents
             .map(
               (doc) => {
@@ -205,16 +210,14 @@ class SupabaseService {
             )
             .toList();
 
-        if (docs.isNotEmpty) {
-          await _withRetry(
-            () => client.from(SupabaseConstants.documentsTable).upsert(docs),
-          );
-          debugPrint('✅ ${docs.length} documents synced!');
-        }
-      } catch (e) {
-        debugPrint('❌ Documents sync FAILED: $e');
-        rethrow;
+        await _withRetry(
+          () => client.from(SupabaseConstants.documentsTable).upsert(docs),
+        );
+        debugPrint('✅ ${docs.length} documents synced!');
       }
+    } catch (e) {
+      debugPrint('❌ Documents sync FAILED: $e');
+      rethrow;
     }
 
     debugPrint('=== SUPABASE UPSERT END ===');
@@ -580,6 +583,18 @@ class SupabaseService {
         return 'image/png';
       default:
         return 'application/octet-stream';
+    }
+  }
+
+  /// Delete a document from Supabase Storage.
+  static Future<bool> deleteDocumentFile(String storagePath) async {
+    try {
+      await client.storage.from(_storageBucket).remove([storagePath]);
+      debugPrint('✅ Document deleted from storage: $storagePath');
+      return true;
+    } catch (e) {
+      debugPrint('⚠️ Document deletion from storage failed: $e');
+      return false;
     }
   }
 }

@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/release_letter_service.dart';
+import '../../core/services/supabase_service.dart';
 import '../../data/models/bg_model.dart';
 import '../providers/bg_providers.dart';
 import 'premium_inputs.dart';
@@ -401,15 +403,20 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
         spacing: 10,
         runSpacing: 10,
         children: widget.bg.documents.map((doc) {
-          return Container(
-            width: 180,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
+          return Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _openDocument(context, doc),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
+              child: Container(
+                width: 180,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
@@ -445,6 +452,19 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
                         ),
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    InkWell(
+                      onTap: () => _deleteDocument(context, doc),
+                      borderRadius: BorderRadius.circular(4),
+                      child: const Padding(
+                        padding: EdgeInsets.all(4.0),
+                        child: Icon(
+                          Icons.delete_outline_rounded,
+                          size: 16,
+                          color: AppColors.danger,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -458,18 +478,30 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
+                Text(
+                  doc.fileName,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
                 Text(
                   dateFormat.format(doc.uploadDate),
                   style: const TextStyle(
                     color: AppColors.textMuted,
-                    fontSize: 11,
+                    fontSize: 10,
                   ),
                 ),
               ],
             ),
-          );
-        }).toList(),
+          ),
+          ),
+        );
+      }).toList(),
       ),
     );
   }
@@ -681,6 +713,175 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
         );
       }
     }
+  }
+
+  Future<void> _openDocument(BuildContext context, DocumentModel doc) async {
+    String finalPath = doc.filePath;
+    final file = File(finalPath);
+    
+    if (!await file.exists()) {
+      if (doc.storagePath != null && doc.storagePath!.isNotEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Downloading file from cloud...'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+
+        final downloadedPath = await SupabaseService.downloadDocumentFile(
+          storagePath: doc.storagePath!,
+          fileName: doc.fileName,
+        );
+
+        if (downloadedPath != null) {
+          finalPath = downloadedPath;
+          _updateDocumentLocalPath(doc, downloadedPath);
+        } else {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Could not download file: ${doc.fileName}'),
+                backgroundColor: AppColors.danger,
+              ),
+            );
+          }
+          return;
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('File not found locally & no cloud backup: ${doc.fileName}'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
+    try {
+      if (Platform.isWindows) {
+        await Process.run('cmd', ['/c', 'start', '', finalPath]);
+      } else if (Platform.isMacOS) {
+        await Process.run('open', [finalPath]);
+      } else if (Platform.isLinux) {
+        await Process.run('xdg-open', [finalPath]);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not open file: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
+  void _updateDocumentLocalPath(DocumentModel doc, String newPath) async {
+    try {
+      final allBgs = ref.read(allBgsProvider).value ?? [];
+      for (var bg in allBgs) {
+        final docIndex = bg.documents.indexWhere((d) => d.id == doc.id);
+        if (docIndex != -1) {
+          final updatedDocs = List<DocumentModel>.from(bg.documents);
+          updatedDocs[docIndex] = doc.copyWith(filePath: newPath);
+          
+          final updatedBg = bg.copyWith(
+            documents: updatedDocs,
+            updatedAt: DateTime.now(),
+          );
+          
+          final repo = ref.read(bgRepositoryProvider);
+          await repo.updateBg(updatedBg);
+          ref.invalidate(allBgsProvider);
+          break;
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to update local document path: $e');
+    }
+  }
+
+  void _deleteDocument(BuildContext context, DocumentModel doc) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete Document'),
+        content: Text(
+          'Are you sure you want to delete ${doc.fileName}? This will also remove it from cloud storage.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context); // Close dialog
+
+              try {
+                // Delete from cloud storage if backed up
+                if (doc.storagePath != null && doc.storagePath!.isNotEmpty) {
+                  await SupabaseService.deleteDocumentFile(doc.storagePath!);
+                }
+
+                // Delete local file if it exists
+                try {
+                  final file = File(doc.filePath);
+                  if (await file.exists()) {
+                    await file.delete();
+                  }
+                } catch (fileErr) {
+                  debugPrint('Non-fatal error deleting local file: $fileErr');
+                }
+
+                // Remove from BG model
+                final repo = ref.read(bgRepositoryProvider);
+                final updatedDocs = widget.bg.documents.where((d) => d.id != doc.id).toList();
+                final updatedBg = widget.bg.copyWith(
+                  documents: updatedDocs,
+                  updatedAt: DateTime.now(),
+                );
+
+                await repo.updateBg(updatedBg);
+                ref.invalidate(allBgsProvider);
+                ref.invalidate(dashboardStatsProvider);
+
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Document deleted successfully'),
+                      backgroundColor: AppColors.success,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to delete document: $e'),
+                      backgroundColor: AppColors.danger,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
   }
 }
 

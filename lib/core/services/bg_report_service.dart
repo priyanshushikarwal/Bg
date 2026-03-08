@@ -1,4 +1,4 @@
-﻿import 'package:pdf/pdf.dart';
+import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
 import '../../data/models/bg_model.dart';
@@ -76,7 +76,9 @@ class BgReportService {
                   children: [
                     _buildHeaderCell('Sr'),
                     _buildHeaderCell('BG Number'),
+                    _buildHeaderCell('TN No.'),
                     _buildHeaderCell('Bank'),
+                    _buildHeaderCell('Discom'),
                     _buildHeaderCell('Amount'),
                     _buildHeaderCell('Issue Date'),
                     _buildHeaderCell('Expiry Date'),
@@ -99,7 +101,9 @@ class BgReportService {
                     children: [
                       _buildCell((index + 1).toString()),
                       _buildCell(bg.bgNumber),
+                      _buildCell(bg.tenderNumber.isNotEmpty ? bg.tenderNumber : '-'),
                       _buildCell(bg.bankName),
+                      _buildCell(bg.discom.isNotEmpty ? bg.discom : '-'),
                       _buildCell(
                         _currencyFormat.format(bg.amount),
                         alignRight: true,

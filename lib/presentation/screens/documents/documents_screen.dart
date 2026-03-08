@@ -217,11 +217,50 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                           size: 24,
                         ),
                       ),
-                      PremiumIconButton(
-                        icon: Icons.more_vert_rounded,
-                        onPressed: () {},
-                        size: 32,
-                        iconSize: 18,
+                      PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert_rounded, size: 20, color: AppColors.textSecondary),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        onSelected: (value) {
+                          if (value == 'open') {
+                             _openDocument(context, doc);
+                          } else if (value == 'folder') {
+                             _openDocumentFolder(context, doc);
+                          } else if (value == 'delete') {
+                             _deleteDocument(context, doc, bg);
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: 'open',
+                            child: Row(
+                              children: [
+                                Icon(Icons.open_in_new_rounded, size: 16),
+                                SizedBox(width: 8),
+                                Text('Open File'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem(
+                            value: 'folder',
+                            child: Row(
+                              children: [
+                                Icon(Icons.folder_open_rounded, size: 16),
+                                SizedBox(width: 8),
+                                Text('Show Location'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete_outline_rounded, size: 16, color: AppColors.danger),
+                                SizedBox(width: 8),
+                                Text('Delete', style: TextStyle(color: AppColors.danger)),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -236,12 +275,22 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
-                    'BG: ${bg.bgNumber}',
+                    doc.fileName,
                     style: const TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 12,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'BG: ${bg.bgNumber}',
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 11,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -501,6 +550,83 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
     } catch (e) {
       debugPrint('Failed to update local document path: $e');
     }
+  }
+
+  void _deleteDocument(BuildContext context, DocumentModel doc, BgModel bg) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete Document'),
+        content: Text(
+          'Are you sure you want to delete ${doc.fileName}? This will also remove it from cloud storage.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context); // Close dialog
+
+              try {
+                // Delete from cloud storage if backed up
+                if (doc.storagePath != null && doc.storagePath!.isNotEmpty) {
+                  await SupabaseService.deleteDocumentFile(doc.storagePath!);
+                }
+
+                // Delete local file if it exists
+                try {
+                  final file = File(doc.filePath);
+                  if (await file.exists()) {
+                    await file.delete();
+                  }
+                } catch (fileErr) {
+                  debugPrint('Non-fatal error deleting local file: $fileErr');
+                }
+
+                // Remove from BG model
+                final repo = ref.read(bgRepositoryProvider);
+                final updatedDocs = bg.documents.where((d) => d.id != doc.id).toList();
+                final updatedBg = bg.copyWith(
+                  documents: updatedDocs,
+                  updatedAt: DateTime.now(),
+                );
+
+                await repo.updateBg(updatedBg);
+                ref.invalidate(allBgsProvider);
+                ref.invalidate(dashboardStatsProvider);
+
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Document deleted successfully'),
+                      backgroundColor: AppColors.success,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to delete document: $e'),
+                      backgroundColor: AppColors.danger,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
   }
 }
 
