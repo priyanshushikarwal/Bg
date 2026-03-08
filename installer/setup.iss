@@ -4,7 +4,7 @@
 ; ============================================================
 
 #define MyAppName "BG Manager"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.9"
 #define MyAppPublisher "BG Manager"
 #define MyAppExeName "bg_manager.exe"
 #define MyAppURL "https://bgmanager.app"
@@ -75,16 +75,11 @@ Source: "{#BuildDir}\bg_manager.exe"; DestDir: "{app}"; Flags: ignoreversion
 ; ---- Flutter Engine DLL ----
 Source: "{#BuildDir}\flutter_windows.dll"; DestDir: "{app}"; Flags: ignoreversion
 
-; ---- Plugin DLLs (wildcard) ----
+; ---- Plugin DLLs & VC++ Runtime DLLs (wildcard handling everything) ----
 Source: "{#BuildDir}\*.dll"; DestDir: "{app}"; Flags: ignoreversion
 
 ; ---- Data folder (icudtl.dat, app.so, flutter_assets) ----
 Source: "{#BuildDir}\data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs
-
-; ---- Visual C++ Runtime DLLs (CRITICAL for client PCs without dev tools) ----
-Source: "vcredist\msvcp140.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "vcredist\vcruntime140.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "vcredist\vcruntime140_1.dll"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"

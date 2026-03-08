@@ -1,10 +1,12 @@
-﻿import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
+import '../../../core/services/supabase_service.dart';
 import '../../../data/models/bg_model.dart';
 import '../../providers/bg_providers.dart';
 import '../../widgets/glass_card.dart';
@@ -273,14 +275,14 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                           PremiumIconButton(
                             icon: Icons.visibility_rounded,
                             tooltip: 'Preview',
-                            onPressed: () {},
+                            onPressed: () => _openDocument(context, doc),
                             size: 32,
                             iconSize: 16,
                           ),
                           PremiumIconButton(
                             icon: Icons.download_rounded,
-                            tooltip: 'Download',
-                            onPressed: () {},
+                            tooltip: 'Open Folder',
+                            onPressed: () => _openDocumentFolder(context, doc),
                             size: 32,
                             iconSize: 16,
                           ),
@@ -334,6 +336,171 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
       context: context,
       builder: (context) => _UploadDocumentDialog(ref: ref),
     );
+  }
+
+  Future<void> _openDocument(BuildContext context, DocumentModel doc) async {
+    String finalPath = doc.filePath;
+    final file = File(finalPath);
+    
+    if (!await file.exists()) {
+      if (doc.storagePath != null && doc.storagePath!.isNotEmpty) {
+        // Show loading snackbar
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Downloading file from cloud...'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+
+        // Try downloading
+        final downloadedPath = await SupabaseService.downloadDocumentFile(
+          storagePath: doc.storagePath!,
+          fileName: doc.fileName,
+        );
+
+        if (downloadedPath != null) {
+          finalPath = downloadedPath;
+          // IMPORTANT: Update the document with the new local path
+          _updateDocumentLocalPath(doc, downloadedPath);
+        } else {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Could not download file: ${doc.fileName}'),
+                backgroundColor: AppColors.danger,
+              ),
+            );
+          }
+          return;
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('File not found locally & no cloud backup: ${doc.fileName}'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
+    try {
+      if (Platform.isWindows) {
+        await Process.run('cmd', ['/c', 'start', '', finalPath]);
+      } else if (Platform.isMacOS) {
+        await Process.run('open', [finalPath]);
+      } else if (Platform.isLinux) {
+        await Process.run('xdg-open', [finalPath]);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not open file: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _openDocumentFolder(BuildContext context, DocumentModel doc) async {
+    String finalPath = doc.filePath;
+    final file = File(finalPath);
+    
+    if (!await file.exists()) {
+      if (doc.storagePath != null && doc.storagePath!.isNotEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Downloading file from cloud to show folder...'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+
+        final downloadedPath = await SupabaseService.downloadDocumentFile(
+          storagePath: doc.storagePath!,
+          fileName: doc.fileName,
+        );
+
+        if (downloadedPath != null) {
+          finalPath = downloadedPath;
+          _updateDocumentLocalPath(doc, downloadedPath);
+        } else {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Could not download file: ${doc.fileName}'),
+                backgroundColor: AppColors.danger,
+              ),
+            );
+          }
+          return;
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('File not found: ${doc.fileName}'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
+    try {
+      if (Platform.isWindows) {
+        await Process.run('explorer.exe', ['/select,', finalPath]);
+      } else if (Platform.isMacOS) {
+        await Process.run('open', ['-R', finalPath]);
+      } else if (Platform.isLinux) {
+        final downloadedFile = File(finalPath);
+        final dir = downloadedFile.parent.path;
+        await Process.run('xdg-open', [dir]);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not open folder: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
+  void _updateDocumentLocalPath(DocumentModel doc, String newPath) async {
+    try {
+      final allBgs = ref.read(allBgsProvider).value ?? [];
+      // Find the BG this document belongs to
+      for (var bg in allBgs) {
+        final docIndex = bg.documents.indexWhere((d) => d.id == doc.id);
+        if (docIndex != -1) {
+          final updatedDocs = List<DocumentModel>.from(bg.documents);
+          updatedDocs[docIndex] = doc.copyWith(filePath: newPath);
+          
+          final updatedBg = bg.copyWith(
+            documents: updatedDocs,
+            updatedAt: DateTime.now(),
+          );
+          
+          final repo = ref.read(bgRepositoryProvider);
+          await repo.updateBg(updatedBg);
+          ref.invalidate(allBgsProvider);
+          break;
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to update local document path: $e');
+    }
   }
 }
 
@@ -558,13 +725,25 @@ class _UploadDocumentDialogState extends State<_UploadDocumentDialog> {
       final existingDocs = selectedBg.documents
           .where((d) => d.type == _selectedType)
           .toList();
+
+      final docId = const Uuid().v4();
+
+      // Upload to Supabase Storage
+      final storagePath = await SupabaseService.uploadDocumentFile(
+        bgId: selectedBg.id,
+        docId: docId,
+        localFilePath: _selectedFilePath!,
+        fileName: _selectedFileName ?? 'document',
+      );
+
       final doc = DocumentModel(
-        id: const Uuid().v4(),
+        id: docId,
         type: _selectedType!,
         fileName: _selectedFileName ?? 'document',
         filePath: _selectedFilePath!,
         uploadDate: DateTime.now(),
         version: existingDocs.length + 1,
+        storagePath: storagePath,
       );
 
       final updatedBg = selectedBg.copyWith(
@@ -581,7 +760,11 @@ class _UploadDocumentDialogState extends State<_UploadDocumentDialog> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Document uploaded to ${selectedBg.bgNumber}'),
+            content: Text(
+              storagePath != null
+                  ? 'Document uploaded & synced to cloud ✅'
+                  : 'Document saved locally (cloud sync failed)',
+            ),
             backgroundColor: AppColors.success,
           ),
         );

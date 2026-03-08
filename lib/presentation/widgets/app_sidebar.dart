@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_dimensions.dart';
@@ -85,75 +85,84 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 12, bottom: 8, top: 4),
-                    child: Text(
-                      'SELECT FIRM',
-                      style: TextStyle(
-                        color: AppColors.textOnDarkMuted.withValues(alpha: 0.4),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.2,
+                  // Scrollable area for firm selector + menu items
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 12, bottom: 8, top: 4),
+                            child: Text(
+                              'SELECT FIRM',
+                              style: TextStyle(
+                                color: AppColors.textOnDarkMuted.withValues(alpha: 0.4),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ),
+                          _FirmSelector(),
+                          const SizedBox(height: 16),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 12, bottom: 8, top: 4),
+                            child: Text(
+                              'MAIN MENU',
+                              style: TextStyle(
+                                color: AppColors.textOnDarkMuted.withValues(alpha: 0.4),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ),
+                          _SidebarItem(
+                            icon: Icons.grid_view_rounded,
+                            label: AppStrings.dashboard,
+                            isSelected: currentScreen == AppScreen.dashboard,
+                            onTap: () =>
+                                ref.read(currentScreenProvider.notifier).state =
+                                    AppScreen.dashboard,
+                          ),
+                          _SidebarItem(
+                            icon: Icons.account_balance_rounded,
+                            label: AppStrings.bgManagement,
+                            isSelected: currentScreen == AppScreen.bgManagement,
+                            onTap: () =>
+                                ref.read(currentScreenProvider.notifier).state =
+                                    AppScreen.bgManagement,
+                          ),
+                          _SidebarItem(
+                            icon: Icons.savings_outlined,
+                            label: AppStrings.fdrManagement,
+                            isSelected: currentScreen == AppScreen.fdrManagement,
+                            onTap: () =>
+                                ref.read(currentScreenProvider.notifier).state =
+                                    AppScreen.fdrManagement,
+                          ),
+                          _SidebarItem(
+                            icon: Icons.folder_outlined,
+                            label: AppStrings.documents,
+                            isSelected: currentScreen == AppScreen.documents,
+                            onTap: () =>
+                                ref.read(currentScreenProvider.notifier).state =
+                                    AppScreen.documents,
+                          ),
+                          _SidebarItem(
+                            icon: Icons.bar_chart_rounded,
+                            label: AppStrings.reports,
+                            isSelected: currentScreen == AppScreen.reports,
+                            onTap: () =>
+                                ref.read(currentScreenProvider.notifier).state =
+                                    AppScreen.reports,
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  _FirmSelector(),
-                  const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 12, bottom: 8, top: 4),
-                    child: Text(
-                      'MAIN MENU',
-                      style: TextStyle(
-                        color: AppColors.textOnDarkMuted.withValues(alpha: 0.4),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ),
-                  _SidebarItem(
-                    icon: Icons.grid_view_rounded,
-                    label: AppStrings.dashboard,
-                    isSelected: currentScreen == AppScreen.dashboard,
-                    onTap: () =>
-                        ref.read(currentScreenProvider.notifier).state =
-                            AppScreen.dashboard,
-                  ),
-                  _SidebarItem(
-                    icon: Icons.account_balance_rounded,
-                    label: AppStrings.bgManagement,
-                    isSelected: currentScreen == AppScreen.bgManagement,
-                    onTap: () =>
-                        ref.read(currentScreenProvider.notifier).state =
-                            AppScreen.bgManagement,
-                  ),
-                  _SidebarItem(
-                    icon: Icons.savings_outlined,
-                    label: AppStrings.fdrManagement,
-                    isSelected: currentScreen == AppScreen.fdrManagement,
-                    onTap: () =>
-                        ref.read(currentScreenProvider.notifier).state =
-                            AppScreen.fdrManagement,
-                  ),
-                  _SidebarItem(
-                    icon: Icons.folder_outlined,
-                    label: AppStrings.documents,
-                    isSelected: currentScreen == AppScreen.documents,
-                    onTap: () =>
-                        ref.read(currentScreenProvider.notifier).state =
-                            AppScreen.documents,
-                  ),
-                  _SidebarItem(
-                    icon: Icons.bar_chart_rounded,
-                    label: AppStrings.reports,
-                    isSelected: currentScreen == AppScreen.reports,
-                    onTap: () =>
-                        ref.read(currentScreenProvider.notifier).state =
-                            AppScreen.reports,
-                  ),
 
-                  const Spacer(),
-
+                  // Pinned at bottom
                   Padding(
                     padding: const EdgeInsets.only(left: 12, bottom: 8, top: 4),
                     child: Text(
@@ -425,11 +434,11 @@ class _FirmOptionState extends State<_FirmOption> {
 
   IconData _getFirmIcon(String name) {
     switch (name) {
-      case 'DoonInfra':
+      case 'Doon Infrapower Projects Pvt Ltd':
         return Icons.corporate_fare_rounded;
-      case 'BI High Power Tech':
+      case 'B Hi Tech Power Transformer':
         return Icons.bolt_rounded;
-      case 'BI':
+      case 'Doon Electrical Industries':
         return Icons.business_rounded;
       default:
         return Icons.all_inclusive_rounded;
@@ -438,11 +447,11 @@ class _FirmOptionState extends State<_FirmOption> {
 
   Color _getFirmColor(String name) {
     switch (name) {
-      case 'DoonInfra':
+      case 'Doon Infrapower Projects Pvt Ltd':
         return const Color(0xFF6366F1);
-      case 'BI High Power Tech':
+      case 'B Hi Tech Power Transformer':
         return const Color(0xFFF59E0B);
-      case 'BI':
+      case 'Doon Electrical Industries':
         return const Color(0xFF10B981);
       default:
         return AppColors.primary;

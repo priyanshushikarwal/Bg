@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
@@ -735,38 +735,16 @@ class _AddBgDialogState extends ConsumerState<AddBgDialog> {
   final _fdrNumberController = TextEditingController();
   final _fdrAmountController = TextEditingController();
   final _roiController = TextEditingController();
+  final _bankNameController = TextEditingController();
+  final _discomController = TextEditingController();
 
   final _issueDateController = TextEditingController();
   final _expiryDateController = TextEditingController();
   final _claimExpiryDateController = TextEditingController();
   final _fdrDateController = TextEditingController();
 
-  String? _selectedBank;
-  String? _selectedDiscom;
-  String _selectedFirm = 'DoonInfra';
+  String _selectedFirm = 'Doon Infrapower Projects Pvt Ltd';
   bool _hasFdr = false;
-
-  final List<String> _banks = [
-    'State Bank of India',
-    'HDFC Bank',
-    'ICICI Bank',
-    'Punjab National Bank',
-    'Bank of Baroda',
-    'Canara Bank',
-    'Axis Bank',
-    'Kotak Mahindra Bank',
-  ];
-
-  final List<String> _discoms = [
-    'UPPCL',
-    'PVVNL',
-    'DVVNL',
-    'MVVNL',
-    'PUVVNL',
-    'KESCO',
-    'TORRENT POWER',
-    'TATA POWER',
-  ];
 
   @override
   void initState() {
@@ -793,6 +771,8 @@ class _AddBgDialogState extends ConsumerState<AddBgDialog> {
     _expiryDateController.dispose();
     _claimExpiryDateController.dispose();
     _fdrDateController.dispose();
+    _bankNameController.dispose();
+    _discomController.dispose();
     super.dispose();
   }
 
@@ -950,21 +930,20 @@ class _AddBgDialogState extends ConsumerState<AddBgDialog> {
                       Row(
                         children: [
                           Expanded(
-                            child: _buildDropdownField(
-                              'Bank Name',
-                              _selectedBank,
-                              _banks,
-                              (value) => setState(() => _selectedBank = value),
+                            child: _buildTextField(
+                              controller: _bankNameController,
+                              label: 'Bank Name',
+                              icon: Icons.account_balance_rounded,
+                              required: true,
                             ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
-                            child: _buildDropdownField(
-                              'Discom',
-                              _selectedDiscom,
-                              _discoms,
-                              (value) =>
-                                  setState(() => _selectedDiscom = value),
+                            child: _buildTextField(
+                              controller: _discomController,
+                              label: 'Discom',
+                              icon: Icons.business_rounded,
+                              required: true,
                             ),
                           ),
                         ],
@@ -976,7 +955,7 @@ class _AddBgDialogState extends ConsumerState<AddBgDialog> {
                         _selectedFirm,
                         availableFirms,
                         (value) => setState(
-                          () => _selectedFirm = value ?? 'DoonInfra',
+                          () => _selectedFirm = value ?? 'Doon Infrapower Projects Pvt Ltd',
                         ),
                       ),
 
@@ -1190,8 +1169,8 @@ class _AddBgDialogState extends ConsumerState<AddBgDialog> {
           issueDate: issueDate,
           expiryDate: expiryDate,
           claimExpiryDate: claimExpiryDate ?? expiryDate,
-          bankName: _selectedBank ?? '',
-          discom: _selectedDiscom ?? '',
+          bankName: _bankNameController.text.trim(),
+          discom: _discomController.text.trim(),
           tenderNumber: _tenderController.text,
           status: BgStatus.active,
           fdrDetails: fdrDetails,

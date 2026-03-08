@@ -16,6 +16,16 @@ class BgModelAdapter extends TypeAdapter<BgModel> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
+    String mapLegacyFirm(String? name) {
+      final actualName = name ?? 'Doon Infrapower Projects Pvt Ltd';
+      switch (actualName) {
+        case 'DoonInfra': return 'Doon Infrapower Projects Pvt Ltd';
+        case 'BI High Power Tech': return 'B Hi Tech Power Transformer';
+        case 'BI': return 'Doon Electrical Industries';
+        default: return actualName;
+      }
+    }
+
     return BgModel(
       id: fields[0] as String,
       bgNumber: fields[1] as String,
@@ -32,7 +42,7 @@ class BgModelAdapter extends TypeAdapter<BgModel> {
       fdrDetails: fields[12] as FdrModel?,
       createdAt: fields[13] as DateTime,
       updatedAt: fields[14] as DateTime,
-      firmName: fields[15] as String? ?? 'DoonInfra',
+      firmName: mapLegacyFirm(fields[15] as String?),
     );
   }
 
@@ -205,13 +215,14 @@ class DocumentModelAdapter extends TypeAdapter<DocumentModel> {
       fileName: fields[5] as String,
       description: fields[6] as String?,
       fileSizeBytes: fields[7] as int?,
+      storagePath: fields[8] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, DocumentModel obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -227,7 +238,9 @@ class DocumentModelAdapter extends TypeAdapter<DocumentModel> {
       ..writeByte(6)
       ..write(obj.description)
       ..writeByte(7)
-      ..write(obj.fileSizeBytes);
+      ..write(obj.fileSizeBytes)
+      ..writeByte(8)
+      ..write(obj.storagePath);
   }
 
   @override

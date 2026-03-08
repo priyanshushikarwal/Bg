@@ -1,14 +1,36 @@
-﻿import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:path_provider/path_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/services/supabase_service.dart';
+import 'core/services/settings_service.dart';
 import 'presentation/screens/home_screen.dart';
 import 'presentation/screens/auth/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Use a stable, permanent path for Hive to avoid hot-restart data loss
+  final docsDir = await getApplicationDocumentsDirectory();
+  final hivePath = '${docsDir.path}${Platform.pathSeparator}BgManagerData';
+  final hiveDir = Directory(hivePath);
+  if (!hiveDir.existsSync()) {
+    hiveDir.createSync(recursive: true);
+  }
+
+  // Clean up stale lock files to prevent hot-restart lock errors
+  try {
+    final lockFile = File('$hivePath${Platform.pathSeparator}app_settings.lock');
+    if (lockFile.existsSync()) {
+      lockFile.deleteSync();
+    }
+  } catch (_) {}
+
+  Hive.init(hivePath);
+  await SettingsService.init();
   await SupabaseService.init();
 
   runApp(const ProviderScope(child: BgManagerApp()));

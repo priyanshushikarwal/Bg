@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants/app_colors.dart';
@@ -370,11 +370,11 @@ class _BgTableRowState extends ConsumerState<BgTableRow>
 
   Color _getFirmColor(String firmName) {
     switch (firmName) {
-      case 'DoonInfra':
+      case 'Doon Infrapower Projects Pvt Ltd':
         return const Color(0xFF6366F1);
-      case 'BI High Power Tech':
+      case 'B Hi Tech Power Transformer':
         return const Color(0xFFF59E0B);
-      case 'BI':
+      case 'Doon Electrical Industries':
         return const Color(0xFF10B981);
       default:
         return AppColors.primary;

@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_dimensions.dart';
 import '../../core/utils/date_utils.dart';
@@ -19,6 +20,7 @@ class PremiumTextField extends StatefulWidget {
   final bool readOnly;
   final int maxLines;
   final EdgeInsetsGeometry? padding;
+  final List<TextInputFormatter>? inputFormatters;
 
   const PremiumTextField({
     super.key,
@@ -37,6 +39,7 @@ class PremiumTextField extends StatefulWidget {
     this.readOnly = false,
     this.maxLines = 1,
     this.padding,
+    this.inputFormatters,
   });
 
   @override
@@ -115,6 +118,7 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
             autofocus: widget.autofocus,
             readOnly: widget.readOnly,
             maxLines: widget.maxLines,
+            inputFormatters: widget.inputFormatters,
             style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
             decoration: InputDecoration(
               hintText: widget.hint,
@@ -440,6 +444,41 @@ class _PremiumDateFieldState extends State<PremiumDateField> {
   }
 }
 
+class _DateTextInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    var text = newValue.text;
+
+    if (newValue.selection.baseOffset == 0) {
+      return newValue;
+    }
+
+    var buffer = StringBuffer();
+    for (int i = 0; i < text.length; i++) {
+      buffer.write(text[i]);
+      var nonZeroIndex = i + 1;
+      if (nonZeroIndex % 2 == 0 &&
+          nonZeroIndex != text.length &&
+          nonZeroIndex <= 4) {
+        buffer.write('-');
+      }
+    }
+
+    var string = buffer.toString();
+    if (string.length > 10) {
+      string = string.substring(0, 10);
+    }
+
+    return newValue.copyWith(
+      text: string,
+      selection: TextSelection.collapsed(offset: string.length),
+    );
+  }
+}
+
 class PremiumManualDateField extends StatefulWidget {
   final TextEditingController controller;
   final String? label;
@@ -510,6 +549,10 @@ class _PremiumManualDateFieldState extends State<PremiumManualDateField> {
         prefixIcon: Icons.calendar_month_rounded,
         validator: widget.validator,
         onSubmitted: (_) => _formatInput(),
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+          _DateTextInputFormatter(),
+        ],
       ),
     );
   }

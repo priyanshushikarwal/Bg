@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
@@ -81,6 +81,13 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
                   ),
                 ),
               const Spacer(),
+              _ActionButton(
+                icon: Icons.delete_outline_rounded,
+                label: 'Delete',
+                color: AppColors.danger,
+                onPressed: () => _showDeleteDialog(context),
+              ),
+              const SizedBox(width: 8),
               _ActionButton(
                 icon: Icons.edit_rounded,
                 label: 'Edit',
@@ -492,6 +499,126 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
     showDialog(
       context: context,
       builder: (context) => _EditBgDialog(bg: widget.bg, ref: ref),
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.danger.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.delete_forever_rounded,
+                color: AppColors.danger,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text('Delete BG'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            RichText(
+              text: TextSpan(
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 14,
+                ),
+                children: [
+                  const TextSpan(
+                    text: 'Are you sure you want to permanently delete BG ',
+                  ),
+                  TextSpan(
+                    text: widget.bg.bgNumber,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const TextSpan(text: '?'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.danger.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppColors.danger.withValues(alpha: 0.2),
+                ),
+              ),
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: AppColors.danger,
+                    size: 18,
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'This action cannot be undone. All data including documents, FDR details, and extension history will be lost.',
+                      style: TextStyle(color: AppColors.danger, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              final mutationNotifier = ref.read(bgMutationProvider.notifier);
+              final bgId = widget.bg.id;
+              final success = await mutationNotifier.deleteBg(bgId);
+              if (context.mounted) {
+                Navigator.pop(context); // close confirm dialog only
+                // Collapse the expanded row (don't pop route!)
+                ref.read(expandedBgIdsProvider.notifier).collapse(bgId);
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'BG ${widget.bg.bgNumber} deleted successfully',
+                      ),
+                      backgroundColor: AppColors.success,
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Failed to delete BG'),
+                      backgroundColor: AppColors.danger,
+                    ),
+                  );
+                }
+              }
+            },
+            icon: const Icon(Icons.delete_forever_rounded, size: 18),
+            label: const Text('Delete'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1265,33 +1392,12 @@ class _EditBgDialogState extends State<_EditBgDialog> {
   late TextEditingController _expiryDateController;
   late TextEditingController _claimExpiryDateController;
   late TextEditingController _fdrDateController;
+  late TextEditingController _bankNameController;
+  late TextEditingController _discomController;
+  late String _selectedFirm;
 
-  String? _selectedBank;
-  String? _selectedDiscom;
   bool _hasFdr = false;
   bool _isLoading = false;
-
-  final List<String> _banks = [
-    'State Bank of India',
-    'HDFC Bank',
-    'ICICI Bank',
-    'Punjab National Bank',
-    'Bank of Baroda',
-    'Canara Bank',
-    'Axis Bank',
-    'Kotak Mahindra Bank',
-  ];
-
-  final List<String> _discoms = [
-    'UPPCL',
-    'PVVNL',
-    'DVVNL',
-    'MVVNL',
-    'PUVVNL',
-    'KESCO',
-    'TORRENT POWER',
-    'TATA POWER',
-  ];
 
   @override
   void initState() {
@@ -1313,8 +1419,9 @@ class _EditBgDialogState extends State<_EditBgDialog> {
       text: dateFormat.format(widget.bg.claimExpiryDate),
     );
 
-    _selectedBank = widget.bg.bankName;
-    _selectedDiscom = widget.bg.discom;
+    _bankNameController = TextEditingController(text: widget.bg.bankName);
+    _discomController = TextEditingController(text: widget.bg.discom);
+    _selectedFirm = widget.bg.firmName;
 
     _hasFdr = widget.bg.fdrDetails != null;
     if (_hasFdr) {
@@ -1347,6 +1454,8 @@ class _EditBgDialogState extends State<_EditBgDialog> {
     _expiryDateController.dispose();
     _claimExpiryDateController.dispose();
     _fdrDateController.dispose();
+    _bankNameController.dispose();
+    _discomController.dispose();
     super.dispose();
   }
 
@@ -1504,26 +1613,51 @@ class _EditBgDialogState extends State<_EditBgDialog> {
                       Row(
                         children: [
                           Expanded(
-                            child: _buildDropdownField(
-                              'Bank Name',
-                              _selectedBank,
-                              _banks,
-                              (value) => setState(() => _selectedBank = value),
+                            child: _buildTextField(
+                              controller: _bankNameController,
+                              label: 'Bank Name',
+                              icon: Icons.account_balance_rounded,
+                              required: true,
                             ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
-                            child: _buildDropdownField(
-                              'Discom',
-                              _selectedDiscom,
-                              _discoms,
-                              (value) =>
-                                  setState(() => _selectedDiscom = value),
+                            child: _buildTextField(
+                              controller: _discomController,
+                              label: 'Discom',
+                              icon: Icons.business_rounded,
+                              required: true,
                             ),
                           ),
                         ],
                       ),
+                      const SizedBox(height: 16),
 
+                      Row(
+                        children: [
+                          Expanded(
+                            child: PremiumDropdown<String>(
+                              label: 'Firm Name',
+                              hint: 'Select Firm',
+                              value: _selectedFirm,
+                              items: availableFirms
+                                  .map((f) => DropdownMenuItem(
+                                        value: f,
+                                        child: Text(f),
+                                      ))
+                                  .toList(),
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setState(() => _selectedFirm = val);
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          const Spacer(),
+                        ],
+                      ),
+                      
                       const SizedBox(height: 24),
 
                       Row(
@@ -1677,41 +1811,6 @@ class _EditBgDialogState extends State<_EditBgDialog> {
     );
   }
 
-  Widget _buildDropdownField(
-    String label,
-    String? value,
-    List<String> items,
-    Function(String?) onChanged,
-  ) {
-    return DropdownButtonFormField<String>(
-      value: items.contains(value) ? value : null,
-      decoration: InputDecoration(
-        labelText: '$label *',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
-      ),
-      items: items
-          .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-          .toList(),
-      onChanged: onChanged,
-      validator: (value) => value == null ? 'Required' : null,
-    );
-  }
-
   void _submitForm() async {
     final issueDate = _parseDate(_issueDateController.text);
     final expiryDate = _parseDate(_expiryDateController.text);
@@ -1743,9 +1842,10 @@ class _EditBgDialogState extends State<_EditBgDialog> {
           issueDate: issueDate,
           expiryDate: expiryDate,
           claimExpiryDate: claimExpiryDate ?? expiryDate,
-          bankName: _selectedBank ?? widget.bg.bankName,
-          discom: _selectedDiscom ?? widget.bg.discom,
-          tenderNumber: _tenderController.text,
+          bankName: _bankNameController.text.trim(),
+          discom: _discomController.text.trim(),
+          tenderNumber: _tenderController.text.trim(),
+          firmName: _selectedFirm,
           fdrDetails: fdrDetails,
           updatedAt: DateTime.now(),
         );

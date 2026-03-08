@@ -1,4 +1,4 @@
-﻿import 'package:uuid/uuid.dart';
+import 'package:uuid/uuid.dart';
 import '../models/bg_model.dart';
 import '../../core/services/supabase_service.dart';
 
@@ -181,7 +181,7 @@ class BgRepository {
     required String bankName,
     required String discom,
     required String tenderNumber,
-    String firmName = 'DoonInfra',
+    String firmName = 'Doon Infrapower Projects Pvt Ltd',
     FdrModel? fdrDetails,
     List<DocumentModel>? documents,
   }) {

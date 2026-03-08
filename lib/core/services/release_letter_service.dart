@@ -1,8 +1,9 @@
-﻿import 'package:pdf/pdf.dart';
+import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
 import '../../data/models/bg_model.dart';
 import 'file_save_helper.dart';
+import 'settings_service.dart';
 
 class ReleaseLetterService {
   static final _currencyFormat = NumberFormat.currency(
@@ -14,6 +15,7 @@ class ReleaseLetterService {
 
   static Future<String> generateReleaseLetter(BgModel bg) async {
     final pdf = pw.Document();
+    final firmDetails = SettingsService.getFirmDetails(bg.firmName);
 
     const pageMargin = pw.EdgeInsets.all(40);
 
@@ -51,6 +53,16 @@ class ReleaseLetterService {
           final fiscalYear = '${currentYear % 100}-${(currentYear + 1) % 100}';
           final refNo = 'Ref $firmInitials/$fiscalYear/';
 
+          final firmAddress = firmDetails.address.isNotEmpty
+              ? firmDetails.address
+              : '16A, JAMANA COLONY, VIDHYADHAR NAGAR, JAIPUR 302039';
+          final firmEmail = firmDetails.email.isNotEmpty
+              ? firmDetails.email
+              : 'bhitech2021@gmail.com';
+          final firmMobile = firmDetails.mobile.isNotEmpty
+              ? firmDetails.mobile
+              : '6376270060';
+
           return pw.Stack(
             children: [
               pw.Center(
@@ -80,7 +92,7 @@ class ReleaseLetterService {
                         ),
                         pw.SizedBox(height: 2),
                         pw.Text(
-                          '16A, JAMANA COLONY, VIDHYADHAR NAGAR, JAIPUR 302039',
+                          firmAddress,
                           style: subHeaderStyle,
                         ),
                         pw.SizedBox(height: 2),
@@ -89,14 +101,14 @@ class ReleaseLetterService {
                           children: [
                             pw.Text('EMAIL ID : ', style: subHeaderStyle),
                             pw.Text(
-                              'bhitech2021@gmail.com',
+                              firmEmail,
                               style: subHeaderStyle.copyWith(
                                 color: PdfColors.blue,
                                 decoration: pw.TextDecoration.underline,
                               ),
                             ),
                             pw.Text(
-                              ' Mob No. 6376270060',
+                              ' Mob No. $firmMobile',
                               style: subHeaderStyle,
                             ),
                           ],
@@ -104,9 +116,7 @@ class ReleaseLetterService {
                         pw.SizedBox(height: 8),
                         pw.Container(
                           height: 1.5,
-                          color: PdfColor.fromHex(
-                            '#800000',
-                          ),
+                          color: PdfColor.fromHex('#800000'),
                         ),
                       ],
                     ),
@@ -293,7 +303,11 @@ class ReleaseLetterService {
       ),
     );
 
-    final fileName = 'Release_Letter_${bg.bgNumber.replaceAll('/', '_')}.pdf';
+    final safeBgNumber = bg.bgNumber.replaceAll(
+      RegExp(r'[^a-zA-Z0-9.\-]'),
+      '_',
+    );
+    final fileName = 'Release_Letter_$safeBgNumber.pdf';
     final bytes = await pdf.save();
 
     return await saveAndOpenFile(fileName, bytes);

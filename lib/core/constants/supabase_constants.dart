@@ -1,4 +1,4 @@
-﻿
+
 class SupabaseConstants {
   static const String supabaseUrl = 'https://qsnlvvzdzuzkqgisnqre.supabase.co';
 
@@ -9,4 +9,5 @@ class SupabaseConstants {
   static const String extensionsTable = 'bg_extensions';
   static const String documentsTable = 'bg_documents';
   static const String fdrTable = 'fdr_details';
+  static const String firmsTable = 'firms';
 }

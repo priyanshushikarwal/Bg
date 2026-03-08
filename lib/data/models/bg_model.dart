@@ -1,4 +1,4 @@
-﻿import 'package:hive/hive.dart';
+import 'package:hive/hive.dart';
 
 part 'bg_model.g.dart';
 
@@ -289,6 +289,9 @@ class DocumentModel extends HiveObject {
   @HiveField(7)
   final int? fileSizeBytes;
 
+  @HiveField(8)
+  final String? storagePath;
+
   DocumentModel({
     required this.id,
     required this.type,
@@ -298,6 +301,7 @@ class DocumentModel extends HiveObject {
     required this.fileName,
     this.description,
     this.fileSizeBytes,
+    this.storagePath,
   });
 
   DocumentModel copyWith({
@@ -309,6 +313,7 @@ class DocumentModel extends HiveObject {
     String? fileName,
     String? description,
     int? fileSizeBytes,
+    String? storagePath,
   }) {
     return DocumentModel(
       id: id ?? this.id,
@@ -319,6 +324,7 @@ class DocumentModel extends HiveObject {
       fileName: fileName ?? this.fileName,
       description: description ?? this.description,
       fileSizeBytes: fileSizeBytes ?? this.fileSizeBytes,
+      storagePath: storagePath ?? this.storagePath,
     );
   }
 

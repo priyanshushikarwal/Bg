@@ -1,6 +1,9 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/bg_model.dart';
 import '../../data/repositories/bg_repository.dart';
+import '../../core/services/settings_service.dart';
+import '../../core/services/supabase_service.dart';
 
 final bgRepositoryProvider = Provider<BgRepository>((ref) {
   return BgRepository();
@@ -8,7 +11,7 @@ final bgRepositoryProvider = Provider<BgRepository>((ref) {
 
 enum BgFilterType { all, active, expired, released, expiringWithin50Days }
 
-const List<String> availableFirms = ['DoonInfra', 'BI High Power Tech', 'BI'];
+List<String> get availableFirms => SettingsService.firms;
 
 class BgFilterState {
   final BgFilterType filterType;
@@ -233,9 +236,100 @@ final discomNamesProvider = FutureProvider<Set<String>>((ref) async {
   return repository.getAllDiscoms();
 });
 
-final firmNamesProvider = Provider<List<String>>((ref) {
-  return availableFirms;
+final firmNamesProvider = StateNotifierProvider<FirmNamesNotifier, List<String>>((ref) {
+  final notifier = FirmNamesNotifier();
+  notifier.loadFromSupabase(); // Auto-sync on startup
+  return notifier;
 });
+
+class FirmNamesNotifier extends StateNotifier<List<String>> {
+  FirmNamesNotifier() : super(SettingsService.firms);
+
+  void refresh() {
+    state = SettingsService.firms;
+  }
+
+  /// Fetch firms from Supabase and merge with local.
+  Future<void> loadFromSupabase() async {
+    try {
+      final remoteFirms = await SupabaseService.fetchFirms();
+      if (remoteFirms.isNotEmpty) {
+        final localFirms = SettingsService.firms;
+        final mergedNames = <String>{...localFirms};
+
+        for (final rf in remoteFirms) {
+          final name = rf['name'] as String? ?? '';
+          if (name.isEmpty) continue;
+          mergedNames.add(name);
+
+          // Also save details locally from Supabase
+          await SettingsService.saveFirmDetails(
+            FirmDetails(
+              name: name,
+              address: rf['address'] as String? ?? '',
+              email: rf['email'] as String? ?? '',
+              mobile: rf['mobile'] as String? ?? '',
+            ),
+          );
+        }
+
+        // Save merged list locally
+        for (final name in mergedNames) {
+          await SettingsService.addFirm(name);
+        }
+        state = SettingsService.firms;
+      } else {
+        // No remote firms — push local firms to Supabase
+        final localFirms = SettingsService.firms;
+        for (final name in localFirms) {
+          final details = SettingsService.getFirmDetails(name);
+          await SupabaseService.upsertFirm(
+            name: name,
+            address: details.address,
+            email: details.email,
+            mobile: details.mobile,
+          );
+        }
+      }
+    } catch (e) {
+      // Silently fail — local data still works
+      debugPrint('⚠️ Firm sync failed: $e');
+    }
+  }
+
+  Future<void> addFirm(String name) async {
+    await SettingsService.addFirm(name);
+    state = SettingsService.firms;
+    // Sync to Supabase
+    final details = SettingsService.getFirmDetails(name);
+    await SupabaseService.upsertFirm(
+      name: name,
+      address: details.address,
+      email: details.email,
+      mobile: details.mobile,
+    );
+  }
+
+  Future<void> removeFirm(String name) async {
+    await SettingsService.removeFirm(name);
+    state = SettingsService.firms;
+    // Sync to Supabase
+    await SupabaseService.deleteFirm(name);
+  }
+
+  /// Save firm details and sync to Supabase.
+  Future<void> saveFirmDetails(FirmDetails details) async {
+    await SettingsService.saveFirmDetails(details);
+    state = SettingsService.firms;
+    // Sync to Supabase
+    await SupabaseService.upsertFirm(
+      name: details.name,
+      address: details.address,
+      email: details.email,
+      mobile: details.mobile,
+    );
+  }
+}
 
 final selectedBgIdProvider = StateProvider<String?>((ref) => null);
 
