@@ -1,13 +1,16 @@
+import 'dart:io';
 import 'package:uuid/uuid.dart';
 import '../models/bg_model.dart';
 import '../../core/services/supabase_service.dart';
 
 class BgRepository {
   final _uuid = const Uuid();
+  static bool _isRepairingMissingBackups = false;
 
 
   Future<List<BgModel>> getAllBgs() async {
-    return await SupabaseService.fetchAllBgs();
+    final allBgs = await SupabaseService.fetchAllBgs();
+    return await _repairMissingDocumentBackups(allBgs);
   }
 
   Future<BgModel?> getBgById(String id) async {
@@ -260,5 +263,74 @@ class BgRepository {
       description: description,
       fileSizeBytes: fileSizeBytes,
     );
+  }
+
+  Future<List<BgModel>> _repairMissingDocumentBackups(List<BgModel> bgs) async {
+    if (_isRepairingMissingBackups || bgs.isEmpty) {
+      return bgs;
+    }
+
+    _isRepairingMissingBackups = true;
+
+    try {
+      final repairedBgs = <BgModel>[];
+
+      for (final bg in bgs) {
+        var didUpdateBg = false;
+        final updatedDocuments = <DocumentModel>[];
+
+        for (final doc in bg.documents) {
+          if (doc.storagePath != null && doc.storagePath!.isNotEmpty) {
+            updatedDocuments.add(doc);
+            continue;
+          }
+
+          if (doc.filePath.isEmpty) {
+            updatedDocuments.add(doc);
+            continue;
+          }
+
+          final file = File(doc.filePath);
+          if (!await file.exists()) {
+            updatedDocuments.add(doc);
+            continue;
+          }
+
+          try {
+            final storagePath = await SupabaseService.uploadDocumentFile(
+              bgId: bg.id,
+              docId: doc.id,
+              localFilePath: doc.filePath,
+              fileName: doc.fileName,
+            );
+
+            if (storagePath != null && storagePath.isNotEmpty) {
+              updatedDocuments.add(doc.copyWith(storagePath: storagePath));
+              didUpdateBg = true;
+              continue;
+            }
+          } catch (_) {
+            // Leave the document untouched if background repair fails.
+          }
+
+          updatedDocuments.add(doc);
+        }
+
+        if (didUpdateBg) {
+          final updatedBg = bg.copyWith(
+            documents: updatedDocuments,
+            updatedAt: DateTime.now(),
+          );
+          await SupabaseService.upsertBg(updatedBg);
+          repairedBgs.add(updatedBg);
+        } else {
+          repairedBgs.add(bg);
+        }
+      }
+
+      return repairedBgs;
+    } finally {
+      _isRepairingMissingBackups = false;
+    }
   }
 }

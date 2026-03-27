@@ -1393,21 +1393,46 @@ class _UploadDocumentDialogState extends State<_UploadDocumentDialog> {
       final existingDocs = widget.bg.documents
           .where((d) => d.type == _selectedType)
           .toList();
+      final docId = const Uuid().v4();
+
+      final storagePath = await SupabaseService.uploadDocumentFile(
+        bgId: widget.bg.id,
+        docId: docId,
+        localFilePath: _selectedFilePath!,
+        fileName: _selectedFileName ?? 'document',
+      );
+
       final doc = DocumentModel(
-        id: const Uuid().v4(),
+        id: docId,
         type: _selectedType!,
         fileName: _selectedFileName ?? 'document',
         filePath: _selectedFilePath!,
         uploadDate: DateTime.now(),
         version: existingDocs.length + 1,
+        storagePath: storagePath,
       );
       final repo = widget.ref.read(bgRepositoryProvider);
       final updatedBg = widget.bg.copyWith(
         documents: [...widget.bg.documents, doc],
+        updatedAt: DateTime.now(),
       );
       await repo.updateBg(updatedBg);
       widget.ref.invalidate(allBgsProvider);
-      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              storagePath != null
+                  ? 'Document uploaded & synced to cloud'
+                  : 'Document saved locally (cloud sync failed)',
+            ),
+            backgroundColor: storagePath != null
+                ? AppColors.success
+                : AppColors.warning,
+          ),
+        );
+      }
     } catch (e) {
       if (mounted)
         ScaffoldMessenger.of(context).showSnackBar(
