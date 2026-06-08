@@ -20,6 +20,6 @@ echo "Running pub get..."
 flutter pub get
 
 echo "Building Flutter Web App..."
-flutter build web --release --tree-shake-icons
+flutter build web --release --tree-shake-icons --pwa-strategy=none
 
 echo "Build successful!"
