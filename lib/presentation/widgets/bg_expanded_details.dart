@@ -718,8 +718,17 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
   }
 
   Future<void> _openDocument(BuildContext context, DocumentModel doc) async {
+    String? storagePath = doc.storagePath;
+    if (storagePath == null || storagePath.isEmpty) {
+      final userId = SupabaseService.currentUser?.id;
+      if (userId != null) {
+        final ext = doc.fileName.split('.').last.toLowerCase();
+        storagePath = '$userId/${widget.bg.id}/${doc.id}.$ext';
+      }
+    }
+
     if (kIsWeb) {
-      if (doc.storagePath != null && doc.storagePath!.isNotEmpty) {
+      if (storagePath != null && storagePath.isNotEmpty) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -731,9 +740,14 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
         try {
           final bytes = await SupabaseService.client.storage
               .from('bg-documents')
-              .download(doc.storagePath!);
+              .download(storagePath);
           
           await saveAndOpenFile(doc.fileName, bytes);
+
+          // If the original doc didn't have storagePath, update it now
+          if (doc.storagePath == null || doc.storagePath!.isEmpty) {
+            _updateDocumentLocalPath(doc, doc.filePath, storagePath: storagePath);
+          }
           return;
         } catch (e) {
           if (context.mounted) {
@@ -763,7 +777,7 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
     final file = File(finalPath);
     
     if (!await file.exists()) {
-      if (doc.storagePath != null && doc.storagePath!.isNotEmpty) {
+      if (storagePath != null && storagePath.isNotEmpty) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -774,13 +788,13 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
         }
 
         final downloadedPath = await SupabaseService.downloadDocumentFile(
-          storagePath: doc.storagePath!,
+          storagePath: storagePath,
           fileName: doc.fileName,
         );
 
         if (downloadedPath != null) {
           finalPath = downloadedPath;
-          _updateDocumentLocalPath(doc, downloadedPath);
+          _updateDocumentLocalPath(doc, downloadedPath, storagePath: storagePath);
         } else {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -825,14 +839,17 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
     }
   }
 
-  void _updateDocumentLocalPath(DocumentModel doc, String newPath) async {
+  void _updateDocumentLocalPath(DocumentModel doc, String newPath, {String? storagePath}) async {
     try {
       final allBgs = ref.read(allBgsProvider).value ?? [];
       for (var bg in allBgs) {
         final docIndex = bg.documents.indexWhere((d) => d.id == doc.id);
         if (docIndex != -1) {
           final updatedDocs = List<DocumentModel>.from(bg.documents);
-          updatedDocs[docIndex] = doc.copyWith(filePath: newPath);
+          updatedDocs[docIndex] = doc.copyWith(
+            filePath: newPath,
+            storagePath: storagePath ?? doc.storagePath,
+          );
           
           final updatedBg = bg.copyWith(
             documents: updatedDocs,

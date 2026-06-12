@@ -224,9 +224,9 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         onSelected: (value) {
                           if (value == 'open') {
-                             _openDocument(context, doc);
+                             _openDocument(context, doc, bg);
                           } else if (value == 'folder') {
-                             _openDocumentFolder(context, doc);
+                             _openDocumentFolder(context, doc, bg);
                           } else if (value == 'delete') {
                              _deleteDocument(context, doc, bg);
                           }
@@ -326,14 +326,14 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                           PremiumIconButton(
                             icon: Icons.visibility_rounded,
                             tooltip: 'Preview',
-                            onPressed: () => _openDocument(context, doc),
+                            onPressed: () => _openDocument(context, doc, bg),
                             size: 32,
                             iconSize: 16,
                           ),
                           PremiumIconButton(
                             icon: Icons.download_rounded,
                             tooltip: 'Open Folder',
-                            onPressed: () => _openDocumentFolder(context, doc),
+                            onPressed: () => _openDocumentFolder(context, doc, bg),
                             size: 32,
                             iconSize: 16,
                           ),
@@ -389,9 +389,18 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
     );
   }
 
-  Future<void> _openDocument(BuildContext context, DocumentModel doc) async {
+  Future<void> _openDocument(BuildContext context, DocumentModel doc, BgModel bg) async {
+    String? storagePath = doc.storagePath;
+    if (storagePath == null || storagePath.isEmpty) {
+      final userId = SupabaseService.currentUser?.id;
+      if (userId != null) {
+        final ext = doc.fileName.split('.').last.toLowerCase();
+        storagePath = '$userId/${bg.id}/${doc.id}.$ext';
+      }
+    }
+
     if (kIsWeb) {
-      if (doc.storagePath != null && doc.storagePath!.isNotEmpty) {
+      if (storagePath != null && storagePath.isNotEmpty) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -403,9 +412,14 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
         try {
           final bytes = await SupabaseService.client.storage
               .from('bg-documents')
-              .download(doc.storagePath!);
+              .download(storagePath);
           
           await saveAndOpenFile(doc.fileName, bytes);
+
+          // If the original doc didn't have storagePath, update it now
+          if (doc.storagePath == null || doc.storagePath!.isEmpty) {
+            _updateDocumentLocalPath(doc, doc.filePath, storagePath: storagePath);
+          }
           return;
         } catch (e) {
           if (context.mounted) {
@@ -435,7 +449,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
     final file = File(finalPath);
     
     if (!await file.exists()) {
-      if (doc.storagePath != null && doc.storagePath!.isNotEmpty) {
+      if (storagePath != null && storagePath.isNotEmpty) {
         // Show loading snackbar
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -448,14 +462,14 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
 
         // Try downloading
         final downloadedPath = await SupabaseService.downloadDocumentFile(
-          storagePath: doc.storagePath!,
+          storagePath: storagePath,
           fileName: doc.fileName,
         );
 
         if (downloadedPath != null) {
           finalPath = downloadedPath;
-          // IMPORTANT: Update the document with the new local path
-          _updateDocumentLocalPath(doc, downloadedPath);
+          // IMPORTANT: Update the document with the new local path and storage path
+          _updateDocumentLocalPath(doc, downloadedPath, storagePath: storagePath);
         } else {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -500,7 +514,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
     }
   }
 
-  Future<void> _openDocumentFolder(BuildContext context, DocumentModel doc) async {
+  Future<void> _openDocumentFolder(BuildContext context, DocumentModel doc, BgModel bg) async {
     if (kIsWeb) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -513,11 +527,20 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
       return;
     }
 
+    String? storagePath = doc.storagePath;
+    if (storagePath == null || storagePath.isEmpty) {
+      final userId = SupabaseService.currentUser?.id;
+      if (userId != null) {
+        final ext = doc.fileName.split('.').last.toLowerCase();
+        storagePath = '$userId/${bg.id}/${doc.id}.$ext';
+      }
+    }
+
     String finalPath = doc.filePath;
     final file = File(finalPath);
     
     if (!await file.exists()) {
-      if (doc.storagePath != null && doc.storagePath!.isNotEmpty) {
+      if (storagePath != null && storagePath.isNotEmpty) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -528,13 +551,13 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
         }
 
         final downloadedPath = await SupabaseService.downloadDocumentFile(
-          storagePath: doc.storagePath!,
+          storagePath: storagePath,
           fileName: doc.fileName,
         );
 
         if (downloadedPath != null) {
           finalPath = downloadedPath;
-          _updateDocumentLocalPath(doc, downloadedPath);
+          _updateDocumentLocalPath(doc, downloadedPath, storagePath: storagePath);
         } else {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -581,7 +604,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
     }
   }
 
-  void _updateDocumentLocalPath(DocumentModel doc, String newPath) async {
+  void _updateDocumentLocalPath(DocumentModel doc, String newPath, {String? storagePath}) async {
     try {
       final allBgs = ref.read(allBgsProvider).value ?? [];
       // Find the BG this document belongs to
@@ -589,7 +612,10 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
         final docIndex = bg.documents.indexWhere((d) => d.id == doc.id);
         if (docIndex != -1) {
           final updatedDocs = List<DocumentModel>.from(bg.documents);
-          updatedDocs[docIndex] = doc.copyWith(filePath: newPath);
+          updatedDocs[docIndex] = doc.copyWith(
+            filePath: newPath,
+            storagePath: storagePath ?? doc.storagePath,
+          );
           
           final updatedBg = bg.copyWith(
             documents: updatedDocs,
