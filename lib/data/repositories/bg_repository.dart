@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/bg_model.dart';
 import '../../core/services/supabase_service.dart';
@@ -266,7 +267,7 @@ class BgRepository {
   }
 
   Future<List<BgModel>> _repairMissingDocumentBackups(List<BgModel> bgs) async {
-    if (_isRepairingMissingBackups || bgs.isEmpty) {
+    if (kIsWeb || _isRepairingMissingBackups || bgs.isEmpty) {
       return bgs;
     }
 

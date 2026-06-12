@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -13,23 +14,28 @@ import 'presentation/screens/auth/login_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Use a stable, permanent path for Hive to avoid hot-restart data loss
-  final docsDir = await getApplicationDocumentsDirectory();
-  final hivePath = '${docsDir.path}${Platform.pathSeparator}BgManagerData';
-  final hiveDir = Directory(hivePath);
-  if (!hiveDir.existsSync()) {
-    hiveDir.createSync(recursive: true);
+  if (kIsWeb) {
+    await Hive.initFlutter();
+  } else {
+    // Use a stable, permanent path for Hive to avoid hot-restart data loss
+    final docsDir = await getApplicationDocumentsDirectory();
+    final hivePath = '${docsDir.path}${Platform.pathSeparator}BgManagerData';
+    final hiveDir = Directory(hivePath);
+    if (!hiveDir.existsSync()) {
+      hiveDir.createSync(recursive: true);
+    }
+
+    // Clean up stale lock files to prevent hot-restart lock errors
+    try {
+      final lockFile = File('$hivePath${Platform.pathSeparator}app_settings.lock');
+      if (lockFile.existsSync()) {
+        lockFile.deleteSync();
+      }
+    } catch (_) {}
+
+    Hive.init(hivePath);
   }
 
-  // Clean up stale lock files to prevent hot-restart lock errors
-  try {
-    final lockFile = File('$hivePath${Platform.pathSeparator}app_settings.lock');
-    if (lockFile.existsSync()) {
-      lockFile.deleteSync();
-    }
-  } catch (_) {}
-
-  Hive.init(hivePath);
   await SettingsService.init();
   await SupabaseService.init();
 

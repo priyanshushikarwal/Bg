@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
@@ -180,7 +181,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   String _getDefaultPath() {
-    if (Platform.isWindows) {
+    if (!kIsWeb && Platform.isWindows) {
       final userProfile = Platform.environment['USERPROFILE'];
       if (userProfile != null) return '$userProfile\\Desktop';
     }
@@ -529,168 +530,170 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ],
           ),
 
-          const SizedBox(height: 24),
+          if (!kIsWeb) ...[
+            const SizedBox(height: 24),
 
-          // File Storage Section
-          _SectionCard(
-            title: 'File Storage',
-            icon: Icons.folder_rounded,
-            children: [
-              const Text(
-                'Release Letter Save Location',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Choose where release letters and exported reports are saved.',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.border),
+            // File Storage Section
+            _SectionCard(
+              title: 'File Storage',
+              icon: Icons.folder_rounded,
+              children: [
+                const Text(
+                  'Release Letter Save Location',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: _releaseLetterDir != null
-                            ? AppColors.success.withValues(alpha: 0.1)
-                            : AppColors.info.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
+                const SizedBox(height: 4),
+                Text(
+                  'Choose where release letters and exported reports are saved.',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: _releaseLetterDir != null
+                              ? AppColors.success.withValues(alpha: 0.1)
+                              : AppColors.info.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          _releaseLetterDir != null
+                              ? Icons.folder_rounded
+                              : Icons.desktop_windows_rounded,
+                          color: _releaseLetterDir != null
+                              ? AppColors.success
+                              : AppColors.info,
+                          size: 20,
+                        ),
                       ),
-                      child: Icon(
-                        _releaseLetterDir != null
-                            ? Icons.folder_rounded
-                            : Icons.desktop_windows_rounded,
-                        color: _releaseLetterDir != null
-                            ? AppColors.success
-                            : AppColors.info,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _releaseLetterDir != null
-                                ? 'Custom Location'
-                                : 'Default Location',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _releaseLetterDir != null
+                                  ? 'Custom Location'
+                                  : 'Default Location',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            _releaseLetterDir ?? _getDefaultPath(),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
+                            const SizedBox(height: 2),
+                            Text(
+                              _releaseLetterDir ?? _getDefaultPath(),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    if (_releaseLetterDir != null)
-                      OutlinedButton.icon(
-                        onPressed: _resetReleaseLetterDir,
-                        icon: const Icon(Icons.restart_alt_rounded, size: 16),
-                        label: const Text('Reset'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.warning,
-                          side: BorderSide(
-                            color: AppColors.warning.withValues(alpha: 0.3),
+                      const SizedBox(width: 12),
+                      if (_releaseLetterDir != null)
+                        OutlinedButton.icon(
+                          onPressed: _resetReleaseLetterDir,
+                          icon: const Icon(Icons.restart_alt_rounded, size: 16),
+                          label: const Text('Reset'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.warning,
+                            side: BorderSide(
+                              color: AppColors.warning.withValues(alpha: 0.3),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            textStyle: const TextStyle(fontSize: 12),
                           ),
+                        ),
+                      const SizedBox(width: 8),
+                      FilledButton.icon(
+                        onPressed: _pickReleaseLetterDir,
+                        icon: const Icon(Icons.folder_open_rounded, size: 16),
+                        label: const Text('Browse'),
+                        style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
+                            horizontal: 16,
                             vertical: 8,
                           ),
                           textStyle: const TextStyle(fontSize: 12),
                         ),
                       ),
-                    const SizedBox(width: 8),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
+            // Updates Section
+            _SectionCard(
+              title: 'Updates',
+              icon: Icons.system_update_alt_rounded,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'App Version',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'v${AppStrings.appVersion}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     FilledButton.icon(
-                      onPressed: _pickReleaseLetterDir,
-                      icon: const Icon(Icons.folder_open_rounded, size: 16),
-                      label: const Text('Browse'),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        textStyle: const TextStyle(fontSize: 12),
+                      onPressed: _checkingForUpdates ? null : _checkForUpdates,
+                      icon: _checkingForUpdates
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : const Icon(Icons.refresh_rounded, size: 18),
+                      label: Text(
+                        _checkingForUpdates ? 'Checking...' : 'Check for Updates',
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 24),
-
-          // Updates Section
-          _SectionCard(
-            title: 'Updates',
-            icon: Icons.system_update_alt_rounded,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'App Version',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'v${AppStrings.appVersion}',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  FilledButton.icon(
-                    onPressed: _checkingForUpdates ? null : _checkForUpdates,
-                    icon: _checkingForUpdates
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
-                              ),
-                            ),
-                          )
-                        : const Icon(Icons.refresh_rounded, size: 18),
-                    label: Text(
-                      _checkingForUpdates ? 'Checking...' : 'Check for Updates',
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ],
       ),
     );

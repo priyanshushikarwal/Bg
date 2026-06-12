@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -10,6 +11,7 @@ import '../../data/models/bg_model.dart';
 import '../providers/bg_providers.dart';
 import 'premium_inputs.dart';
 import '../../core/utils/date_utils.dart';
+import '../../core/services/file_save_helper.dart';
 import 'package:uuid/uuid.dart';
 
 class BgExpandedDetails extends ConsumerStatefulWidget {
@@ -716,6 +718,47 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
   }
 
   Future<void> _openDocument(BuildContext context, DocumentModel doc) async {
+    if (kIsWeb) {
+      if (doc.storagePath != null && doc.storagePath!.isNotEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Downloading file from cloud...'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+        try {
+          final bytes = await SupabaseService.client.storage
+              .from('bg-documents')
+              .download(doc.storagePath!);
+          
+          await saveAndOpenFile(doc.fileName, bytes);
+          return;
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Could not download file: $e'),
+                backgroundColor: AppColors.danger,
+              ),
+            );
+          }
+          return;
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('No cloud backup found for: ${doc.fileName}'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
     String finalPath = doc.filePath;
     final file = File(finalPath);
     
@@ -832,13 +875,15 @@ class _BgExpandedDetailsState extends ConsumerState<BgExpandedDetails>
                 }
 
                 // Delete local file if it exists
-                try {
-                  final file = File(doc.filePath);
-                  if (await file.exists()) {
-                    await file.delete();
+                if (!kIsWeb) {
+                  try {
+                    final file = File(doc.filePath);
+                    if (await file.exists()) {
+                      await file.delete();
+                    }
+                  } catch (fileErr) {
+                    debugPrint('Non-fatal error deleting local file: $fileErr');
                   }
-                } catch (fileErr) {
-                  debugPrint('Non-fatal error deleting local file: $fileErr');
                 }
 
                 // Remove from BG model
