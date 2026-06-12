@@ -1,7 +1,7 @@
 // ==========================================
 // CONFIGURATION FOR SUB-APPLICATION
 // ==========================================
-const APP_IDENTIFIER = 'hrms'; // Change per app: 'live_tracking' | 'hrms' | 'crm'
+const APP_IDENTIFIER = 'bank_guarantee'; // Change per app: 'live_tracking' | 'hrms' | 'crm' | 'bank_guarantee'
 const PORTAL_URL = 'https://dooninfra.in'; // Production URL of main portal
 const LOCAL_PORTAL_URL = 'http://localhost:5173'; // Development fallback
 
