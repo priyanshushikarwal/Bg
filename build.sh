@@ -5,14 +5,14 @@ set -e
 # Disable interactive promps
 export CI=true
 
-if [ ! -d "flutter" ]; then
+if [ ! -d "flutter_sdk" ]; then
   echo "Cloning Flutter repository (shallow)..."
-  git clone https://github.com/flutter/flutter.git -b stable --depth 1
+  git clone https://github.com/flutter/flutter.git -b stable --depth 1 flutter_sdk
 else
-  echo "Flutter directory already exists, skipping clone."
+  echo "Flutter SDK directory already exists, skipping clone."
 fi
 
-export PATH="$PATH:`pwd`/flutter/bin"
+export PATH="$PATH:`pwd`/flutter_sdk/bin"
 
 echo "Flutter version:"
 flutter --version
