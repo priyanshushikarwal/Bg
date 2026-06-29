@@ -1309,6 +1309,7 @@ class _UploadDocumentDialog extends StatefulWidget {
 class _UploadDocumentDialogState extends State<_UploadDocumentDialog> {
   DocumentType? _selectedType;
   String? _selectedFilePath;
+  Uint8List? _selectedFileBytes;
   String? _selectedFileName;
   bool _isLoading = false;
 
@@ -1348,17 +1349,17 @@ class _UploadDocumentDialogState extends State<_UploadDocumentDialog> {
                 height: 100,
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: _selectedFilePath != null
+                    color: _selectedFilePath != null || _selectedFileBytes != null
                         ? AppColors.success
                         : AppColors.border,
                   ),
                   borderRadius: BorderRadius.circular(10),
-                  color: _selectedFilePath != null
+                  color: _selectedFilePath != null || _selectedFileBytes != null
                       ? AppColors.success.withValues(alpha: 0.05)
                       : null,
                 ),
                 child: Center(
-                  child: _selectedFilePath != null
+                  child: _selectedFilePath != null || _selectedFileBytes != null
                       ? Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -1400,7 +1401,7 @@ class _UploadDocumentDialogState extends State<_UploadDocumentDialog> {
         ),
         ElevatedButton(
           onPressed:
-              _selectedType != null && _selectedFilePath != null && !_isLoading
+              _selectedType != null && (_selectedFilePath != null || _selectedFileBytes != null) && !_isLoading
               ? _submit
               : null,
           style: ElevatedButton.styleFrom(
@@ -1440,10 +1441,12 @@ class _UploadDocumentDialogState extends State<_UploadDocumentDialog> {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      withData: true,
     );
     if (result != null) {
       setState(() {
         _selectedFilePath = result.files.single.path;
+        _selectedFileBytes = result.files.single.bytes;
         _selectedFileName = result.files.single.name;
       });
     }
@@ -1460,7 +1463,8 @@ class _UploadDocumentDialogState extends State<_UploadDocumentDialog> {
       final storagePath = await SupabaseService.uploadDocumentFile(
         bgId: widget.bg.id,
         docId: docId,
-        localFilePath: _selectedFilePath!,
+        localFilePath: _selectedFilePath,
+        fileBytes: _selectedFileBytes,
         fileName: _selectedFileName ?? 'document',
       );
 
@@ -1468,7 +1472,7 @@ class _UploadDocumentDialogState extends State<_UploadDocumentDialog> {
         id: docId,
         type: _selectedType!,
         fileName: _selectedFileName ?? 'document',
-        filePath: _selectedFilePath!,
+        filePath: _selectedFilePath ?? '',
         uploadDate: DateTime.now(),
         version: existingDocs.length + 1,
         storagePath: storagePath,

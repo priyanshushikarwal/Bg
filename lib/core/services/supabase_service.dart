@@ -509,22 +509,36 @@ class SupabaseService {
   static Future<String?> uploadDocumentFile({
     required String bgId,
     required String docId,
-    required String localFilePath,
+    String? localFilePath,
+    Uint8List? fileBytes,
     required String fileName,
   }) async {
     final userId = currentUser?.id;
     if (userId == null) return null;
 
     try {
-      final file = File(localFilePath);
-      if (!await file.exists()) {
-        debugPrint('⚠️ File does not exist: $localFilePath');
+      Uint8List? bytes = fileBytes;
+      if (bytes == null && localFilePath != null && localFilePath.isNotEmpty) {
+        if (!kIsWeb) {
+          final file = File(localFilePath);
+          if (!await file.exists()) {
+            debugPrint('⚠️ File does not exist: $localFilePath');
+            return null;
+          }
+          bytes = await file.readAsBytes();
+        } else {
+          debugPrint('⚠️ Cannot read file from path on web without bytes.');
+          return null;
+        }
+      }
+
+      if (bytes == null) {
+        debugPrint('⚠️ No file bytes available to upload.');
         return null;
       }
 
       final ext = fileName.split('.').last.toLowerCase();
       final storagePath = '$userId/$bgId/$docId.$ext';
-      final bytes = await file.readAsBytes();
 
       await client.storage.from(_storageBucket).uploadBinary(
         storagePath,

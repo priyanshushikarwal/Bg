@@ -65,3 +65,5 @@ build/
 # Installer
 installer_output/
 installer/vcredist/
+.vercel
+.env*
