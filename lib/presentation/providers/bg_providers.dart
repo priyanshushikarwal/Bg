@@ -146,13 +146,17 @@ final filteredBgsProvider = Provider<AsyncValue<List<BgModel>>>((ref) {
 
     if (filterState.bankFilter != null) {
       filtered = filtered
-          .where((bg) => bg.bankName == filterState.bankFilter)
+          .where((bg) =>
+              bg.bankName.trim().toLowerCase() ==
+              filterState.bankFilter!.trim().toLowerCase())
           .toList();
     }
 
     if (filterState.discomFilter != null) {
       filtered = filtered
-          .where((bg) => bg.discom == filterState.discomFilter)
+          .where((bg) =>
+              bg.discom.trim().toLowerCase() ==
+              filterState.discomFilter!.trim().toLowerCase())
           .toList();
     }
 
@@ -182,6 +186,33 @@ final dashboardStatsProvider = Provider<AsyncValue<DashboardStats>>((ref) {
 
     if (filterState.firmFilter != null) {
       bgs = bgs.where((bg) => bg.firmName == filterState.firmFilter).toList();
+    }
+
+    if (filterState.bankFilter != null) {
+      bgs = bgs
+          .where((bg) =>
+              bg.bankName.trim().toLowerCase() ==
+              filterState.bankFilter!.trim().toLowerCase())
+          .toList();
+    }
+
+    if (filterState.discomFilter != null) {
+      bgs = bgs
+          .where((bg) =>
+              bg.discom.trim().toLowerCase() ==
+              filterState.discomFilter!.trim().toLowerCase())
+          .toList();
+    }
+
+    if (filterState.searchQuery.isNotEmpty) {
+      final query = filterState.searchQuery.toLowerCase();
+      bgs = bgs.where((bg) {
+        return bg.bgNumber.toLowerCase().contains(query) ||
+            bg.bankName.toLowerCase().contains(query) ||
+            bg.discom.toLowerCase().contains(query) ||
+            bg.tenderNumber.toLowerCase().contains(query) ||
+            bg.firmName.toLowerCase().contains(query);
+      }).toList();
     }
 
     final activeBgs = bgs
@@ -226,14 +257,46 @@ class DashboardStats {
   });
 }
 
-final bankNamesProvider = FutureProvider<Set<String>>((ref) async {
-  final repository = ref.watch(bgRepositoryProvider);
-  return repository.getAllBankNames();
+final bankNamesProvider = Provider<AsyncValue<Set<String>>>((ref) {
+  final allBgsAsync = ref.watch(allBgsProvider);
+  final filterState = ref.watch(bgFilterProvider);
+
+  return allBgsAsync.whenData((allBgs) {
+    final uniqueBanks = <String>{};
+    final lowercaseSeen = <String>{};
+    for (final bg in allBgs) {
+      if (filterState.firmFilter != null &&
+          bg.firmName != filterState.firmFilter) {
+        continue;
+      }
+      final name = bg.bankName.trim();
+      if (name.isNotEmpty && lowercaseSeen.add(name.toLowerCase())) {
+        uniqueBanks.add(name);
+      }
+    }
+    return uniqueBanks;
+  });
 });
 
-final discomNamesProvider = FutureProvider<Set<String>>((ref) async {
-  final repository = ref.watch(bgRepositoryProvider);
-  return repository.getAllDiscoms();
+final discomNamesProvider = Provider<AsyncValue<Set<String>>>((ref) {
+  final allBgsAsync = ref.watch(allBgsProvider);
+  final filterState = ref.watch(bgFilterProvider);
+
+  return allBgsAsync.whenData((allBgs) {
+    final uniqueDiscoms = <String>{};
+    final lowercaseSeen = <String>{};
+    for (final bg in allBgs) {
+      if (filterState.firmFilter != null &&
+          bg.firmName != filterState.firmFilter) {
+        continue;
+      }
+      final name = bg.discom.trim();
+      if (name.isNotEmpty && lowercaseSeen.add(name.toLowerCase())) {
+        uniqueDiscoms.add(name);
+      }
+    }
+    return uniqueDiscoms;
+  });
 });
 
 final firmNamesProvider = StateNotifierProvider<FirmNamesNotifier, List<String>>((ref) {
