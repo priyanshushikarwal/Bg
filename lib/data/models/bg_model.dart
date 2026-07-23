@@ -122,13 +122,13 @@ class BgModel extends HiveObject {
   bool isExpiringWithinDays(int days) {
     if (status != BgStatus.active) return false;
     final now = DateTime.now();
-    final daysUntilExpiry = expiryDate.difference(now).inDays;
+    final daysUntilExpiry = currentExpiryDate.difference(now).inDays;
     return daysUntilExpiry >= 0 && daysUntilExpiry <= days;
   }
 
   bool get isExpired {
     if (status == BgStatus.released) return false;
-    return DateTime.now().isAfter(expiryDate);
+    return DateTime.now().isAfter(currentExpiryDate);
   }
 
   DateTime get currentExpiryDate {
