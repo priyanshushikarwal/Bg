@@ -177,7 +177,7 @@ class DashboardScreen extends ConsumerWidget {
     WidgetRef ref,
     DashboardStats stats,
   ) {
-    final currencyFormat = NumberFormat.compactCurrency(
+    final currencyFormat = NumberFormat.currency(
       locale: 'en_IN',
       symbol: '₹',
       decimalDigits: 0,
